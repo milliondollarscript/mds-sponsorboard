@@ -1,0 +1,31 @@
+# Example OneDev build specification for MDS Skeleton Plugin
+# Replace placeholders (<...>) with actual values or extend steps as needed.
+
+version: 1
+image: php:8.2-cli
+
+cache:
+  paths:
+    - vendor
+
+steps:
+  - name: "Install Composer"
+    commands:
+      - "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer"
+
+  - name: "Install Dependencies"
+    commands:
+      - "composer install --no-interaction --prefer-dist"
+
+  - name: "Run Unit Tests"
+    commands:
+      - "vendor/bin/phpunit --colors=always"
+
+  - name: "Prepare Release Artifact"
+    commands:
+      - "composer dump-autoload -o"
+      - "zip -r mds-skeleton-`date +%Y%m%d`.zip . -x 'vendor/*' '*.git*' '*.idea/*' '*.vscode/*' "
+
+artifacts:
+  - path: "mds-skeleton-*.zip"
+    name: "Release Zip" 

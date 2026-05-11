@@ -1,0 +1,59 @@
+.mds-sponsorboard-editor-block {
+    background: #ffffff;
+    border: 1px solid #d7dde5;
+    border-radius: 8px;
+    color: #111827;
+    cursor: pointer;
+    display: grid;
+    gap: 12px;
+    max-width: 100%;
+    padding: 14px;
+}
+
+.mds-sponsorboard-editor-block:focus,
+.mds-sponsorboard-editor-block.is-selected {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 1px #0f766e;
+    outline: 2px solid transparent;
+}
+
+.mds-sponsorboard-editor-preview {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: 132px;
+    padding: 12px;
+}
+
+.mds-sponsorboard-editor-preview span {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 6px;
+    min-height: 46px;
+}
+
+.mds-sponsorboard-editor-preview .is-committed {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+}
+
+.mds-sponsorboard-editor-meta {
+    display: grid;
+    gap: 4px;
+}
+
+.mds-sponsorboard-editor-meta strong {
+    color: #111827;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.mds-sponsorboard-editor-meta span,
+.mds-sponsorboard-editor-meta code {
+    color: #4b5563;
+    font-size: 12px;
+    line-height: 1.4;
+}

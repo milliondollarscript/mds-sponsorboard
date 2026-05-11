@@ -1,0 +1,248 @@
+.mds-sponsorboard-admin {
+    max-width: 1280px;
+}
+
+.mds-sponsorboard-hero {
+    align-items: center;
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+}
+
+.mds-sponsorboard-hero h2 {
+    font-size: 30px;
+    line-height: 1.15;
+    margin: 0;
+    max-width: 680px;
+}
+
+.mds-sponsorboard-hero p {
+    color: var(--mds3-admin-muted);
+    font-size: 15px;
+    margin: 10px 0 0;
+    max-width: 760px;
+}
+
+.mds-sponsorboard-eyebrow {
+    color: var(--mds3-admin-accent) !important;
+    font-size: 12px !important;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin: 0 0 8px !important;
+    text-transform: uppercase;
+}
+
+.mds-sponsorboard-hero-actions,
+.mds-sponsorboard-slot-create {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.mds-sponsorboard-metrics {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin: 16px 0;
+}
+
+.mds-sponsorboard-metrics article {
+    background: var(--mds3-admin-surface);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.mds-sponsorboard-metrics span,
+.mds-sponsorboard-metrics small {
+    color: var(--mds3-admin-muted);
+    display: block;
+}
+
+.mds-sponsorboard-metrics strong {
+    color: var(--mds3-admin-text);
+    display: block;
+    font-size: 26px;
+    line-height: 1.15;
+    margin: 8px 0;
+}
+
+.mds-sponsorboard-layout {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
+}
+
+.mds-sponsorboard-wide {
+    grid-column: 1 / -1;
+}
+
+.mds-sponsorboard-board-list {
+    display: grid;
+    gap: 10px;
+}
+
+.mds-sponsorboard-board-link {
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 8px;
+    color: var(--mds3-admin-text);
+    display: block;
+    padding: 13px 14px;
+    text-decoration: none;
+}
+
+.mds-sponsorboard-board-link:hover,
+.mds-sponsorboard-board-link:focus {
+    border-color: var(--mds3-admin-accent);
+    color: var(--mds3-admin-text);
+    outline: 2px solid transparent;
+}
+
+.mds-sponsorboard-board-link.is-selected {
+    border-color: var(--mds3-admin-accent);
+    box-shadow: inset 3px 0 0 var(--mds3-admin-accent);
+}
+
+.mds-sponsorboard-board-link span,
+.mds-sponsorboard-board-link small {
+    display: block;
+}
+
+.mds-sponsorboard-board-link small {
+    color: var(--mds3-admin-muted);
+    margin-top: 4px;
+}
+
+.mds-sponsorboard-form,
+.mds-sponsorboard-slot-card,
+.mds-sponsorboard-slot-create {
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.mds-sponsorboard-form {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mds-sponsorboard-form .submit,
+.mds-sponsorboard-field-wide {
+    grid-column: 1 / -1;
+}
+
+.mds-sponsorboard-slot-create {
+    margin-bottom: 16px;
+}
+
+.mds-sponsorboard-slot-create .submit {
+    margin: 0;
+    padding: 0;
+}
+
+.mds-sponsorboard-field {
+    margin: 0;
+}
+
+.mds-sponsorboard-field label {
+    color: var(--mds3-admin-text);
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.mds-sponsorboard-field input,
+.mds-sponsorboard-field select,
+.mds-sponsorboard-field textarea {
+    background: var(--mds3-admin-surface);
+    border-color: var(--mds3-admin-border);
+    color: var(--mds3-admin-text);
+    max-width: 100%;
+    width: 100%;
+}
+
+.mds-sponsorboard-field textarea {
+    resize: vertical;
+}
+
+.mds-sponsorboard-slot-list {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.mds-sponsorboard-slot-card {
+    display: grid;
+    gap: 11px;
+}
+
+.mds-sponsorboard-slot-card .submit {
+    margin: 0;
+    padding: 0;
+}
+
+.mds-sponsorboard-bookings {
+    display: grid;
+    gap: 12px;
+}
+
+.mds-sponsorboard-booking-card {
+    align-items: center;
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(220px, 1fr) auto auto minmax(160px, 220px) auto;
+    padding: 14px;
+}
+
+.mds-sponsorboard-booking-card strong,
+.mds-sponsorboard-booking-card span {
+    display: block;
+}
+
+.mds-sponsorboard-booking-card span {
+    color: var(--mds3-admin-muted);
+    margin-top: 4px;
+}
+
+.mds-sponsorboard-booking-card .submit {
+    margin: 0;
+    padding: 0;
+}
+
+.mds3-card-heading code {
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 6px;
+    color: var(--mds3-admin-text);
+    padding: 7px 9px;
+}
+
+@media (max-width: 960px) {
+    .mds-sponsorboard-hero,
+    .mds-sponsorboard-layout {
+        display: block;
+    }
+
+    .mds-sponsorboard-hero-actions {
+        margin-top: 18px;
+    }
+
+    .mds-sponsorboard-form {
+        grid-template-columns: 1fr;
+    }
+
+    .mds-sponsorboard-booking-card {
+        grid-template-columns: 1fr;
+    }
+
+    .mds-sponsorboard-layout > .mds3-card {
+        margin-bottom: 16px;
+    }
+}

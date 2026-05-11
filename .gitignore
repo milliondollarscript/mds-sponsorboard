@@ -1,0 +1,31 @@
+# WordPress Plugin Skeleton .gitignore
+
+# Composer dependencies
+/vendor/
+
+# Node modules (if used)
+/node_modules/
+
+# IDE and editor folders
+/.idea/
+/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# PHPUnit cache
+.phpunit.result.cache
+
+# Build artifacts
+/build/
+/dist/
+
+# Zip archives
+*.zip
+
+# Environment files
+.env 
