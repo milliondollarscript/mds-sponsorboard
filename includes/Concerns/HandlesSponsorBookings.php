@@ -2,12 +2,14 @@
 /**
  * SponsorBoard booking, checkout, payment-status, and manage-link handlers.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\HostedClient;
+use MillionDollarScript\Extensions\SponsorBoard\Notifications;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -30,7 +32,8 @@ trait HandlesSponsorBookings {
             $this->redirect($referrer, ['sponsorboard_request' => 'unavailable']);
         }
 
-        if ($this->rate_limited($slot_id)) {
+        $settings = is_array($board['settings'] ?? null) ? $board['settings'] : [];
+        if ($this->rate_limited($slot_id, 'request', absint($settings['booking_limit_per_hour'] ?? 10))) {
             $this->redirect($referrer, ['sponsorboard_request' => 'rate_limited']);
         }
 
@@ -41,13 +44,14 @@ trait HandlesSponsorBookings {
         }
 
         $creative_url = esc_url_raw(wp_unslash($_POST['creative_url'] ?? ''));
-        $result = Repository::create_booking([
+        $result = Repository::reserve_slot_and_create_booking([
             'board_id' => absint($board['id'] ?? 0),
             'slot_id' => $slot_id,
             'sponsor_name' => $name,
             'sponsor_email' => $email,
             'sponsor_url' => wp_unslash($_POST['sponsor_url'] ?? ''),
             'status' => 'requested',
+            'terms_accepted' => !empty($_POST['terms_accepted']),
             'creative_payload' => [
                 'creative_url' => $creative_url,
                 'note' => sanitize_textarea_field(wp_unslash($_POST['sponsor_note'] ?? '')),
@@ -58,12 +62,15 @@ trait HandlesSponsorBookings {
             ],
         ]);
 
-        if (!$result || empty($result['booking']['id']) || empty($result['token'])) {
-            $this->redirect($referrer, ['sponsorboard_request' => 'failed']);
+        if (is_wp_error($result) || empty($result['booking']['id']) || empty($result['token'])) {
+            $code = is_wp_error($result) && 'mds_sponsorboard_slot_unavailable' === $result->get_error_code() ? 'unavailable' : 'failed';
+            $this->redirect($referrer, ['sponsorboard_request' => $code]);
         }
 
-        Repository::update_slot($slot_id, array_merge($slot, ['status' => 'reserved']));
-        $this->redirect($this->manage_url(absint($result['booking']['id']), (string) $result['token']), ['created' => '1']);
+        HostedClient::sync_booking($result['booking']);
+        $manage_url = $this->manage_url(absint($result['booking']['id']), (string) $result['token']);
+        Notifications::booking_created($board, $slot, $result['booking'], $manage_url);
+        $this->redirect($manage_url, ['created' => '1']);
     }
 
     /**
@@ -91,7 +98,8 @@ trait HandlesSponsorBookings {
             $this->redirect($referrer, ['sponsorboard_checkout' => 'unavailable']);
         }
 
-        if ($this->rate_limited($slot_id, 'checkout')) {
+        $settings = is_array($board['settings'] ?? null) ? $board['settings'] : [];
+        if ($this->rate_limited($slot_id, 'checkout', absint($settings['booking_limit_per_hour'] ?? 10))) {
             $this->redirect($referrer, ['sponsorboard_checkout' => 'rate_limited']);
         }
 
@@ -101,7 +109,7 @@ trait HandlesSponsorBookings {
             $this->redirect($referrer, ['sponsorboard_checkout' => 'invalid']);
         }
 
-        if (!class_exists('\\MDS3\\Commerce\\Payments')) {
+        if (!class_exists('\\MillionDollarScript\\Commerce\\Payments')) {
             $this->redirect($referrer, ['sponsorboard_checkout' => 'provider_unavailable']);
         }
 
@@ -114,39 +122,42 @@ trait HandlesSponsorBookings {
             'sponsor_note' => sanitize_textarea_field(wp_unslash($_POST['sponsor_note'] ?? '')),
         ];
 
-        $result = Repository::create_booking([
+        $result = Repository::reserve_slot_and_create_booking([
             'board_id' => absint($board['id'] ?? 0),
             'slot_id' => $slot_id,
             'sponsor_name' => $name,
             'sponsor_email' => $email,
             'sponsor_url' => $request['sponsor_url'],
             'status' => 'pending_payment',
+            'terms_accepted' => !empty($_POST['terms_accepted']),
             'creative_payload' => [
                 'creative_url' => $creative_url,
                 'note' => $request['sponsor_note'],
             ],
             'metadata' => [
-                'payment_provider' => \MDS3\Commerce\Payments::active_provider_id(),
+                'payment_provider' => \MillionDollarScript\Commerce\Payments::active_provider_id(),
                 'checkout_ip_hash' => $this->client_hash('ip'),
                 'checkout_user_agent_hash' => $this->client_hash('ua'),
             ],
         ]);
 
-        if (!$result || empty($result['booking']['id']) || empty($result['token'])) {
-            $this->redirect($referrer, ['sponsorboard_checkout' => 'failed']);
+        if (is_wp_error($result) || empty($result['booking']['id']) || empty($result['token'])) {
+            $code = is_wp_error($result) && 'mds_sponsorboard_slot_unavailable' === $result->get_error_code() ? 'unavailable' : 'failed';
+            $this->redirect($referrer, ['sponsorboard_checkout' => $code]);
         }
 
         $booking = is_array($result['booking']) ? $result['booking'] : [];
-        Repository::update_slot($slot_id, array_merge($slot, ['status' => 'reserved']));
+        HostedClient::sync_booking($booking);
 
         $manage_url = $this->manage_url(absint($booking['id'] ?? 0), (string) $result['token']);
-        $checkout = \MDS3\Commerce\Payments::create_checkout([
+        Notifications::booking_created($board, $slot, $booking, $manage_url);
+        $checkout = \MillionDollarScript\Commerce\Payments::create_checkout([
             'source' => 'sponsorboard',
             'source_id' => absint($booking['id'] ?? 0),
             'source_key' => (string) $result['token'],
             'user_id' => get_current_user_id(),
             'email' => $email,
-            'currency' => strtoupper((string) ($slot['currency'] ?? $board['currency'] ?? 'USD')),
+            'currency' => Repository::effective_currency($slot['currency'] ?? $board['currency'] ?? $this->default_currency()),
             'subtotal' => (float) ($slot['price'] ?? 0),
             'total' => (float) ($slot['price'] ?? 0),
             'items' => [[
@@ -184,19 +195,22 @@ trait HandlesSponsorBookings {
         }
 
         $metadata = is_array($booking['metadata'] ?? null) ? $booking['metadata'] : [];
-        $metadata['payment_provider'] = sanitize_key((string) ($checkout['provider'] ?? \MDS3\Commerce\Payments::active_provider_id()));
+        $metadata['payment_provider'] = sanitize_key((string) ($checkout['provider'] ?? \MillionDollarScript\Commerce\Payments::active_provider_id()));
         $metadata['checkout_started_at'] = current_time('mysql');
         if (!empty($checkout['metadata']) && is_array($checkout['metadata'])) {
             $metadata = array_merge($metadata, $checkout['metadata']);
         }
 
-        Repository::update_booking(absint($booking['id'] ?? 0), array_merge($booking, [
+        $updated = Repository::update_booking(absint($booking['id'] ?? 0), array_merge($booking, [
             'order_id' => absint($checkout['provider_order_id'] ?? $booking['order_id'] ?? 0),
-            'status' => sanitize_key((string) ($checkout['status'] ?? 'pending_payment')),
+            'status' => $this->provider_booking_status((string) ($checkout['status'] ?? 'pending_payment')) ?: 'pending_payment',
             'metadata' => $metadata,
         ]));
+        if ($updated) {
+            HostedClient::sync_booking($updated);
+        }
 
-        $this->redirect(esc_url_raw((string) $checkout['checkout_url']));
+        $this->checkout_redirect((string) $checkout['checkout_url'], $referrer);
     }
 
     /**
@@ -215,18 +229,42 @@ trait HandlesSponsorBookings {
             wp_die(esc_html__('This sponsor manage link is invalid or expired.', 'mds-sponsorboard'));
         }
 
+        $slot = Repository::find_slot(absint($booking['slot_id'] ?? 0));
         $creative = is_array($booking['creative_payload'] ?? null) ? $booking['creative_payload'] : [];
+        $previous_creative_url = (string) ($creative['creative_url'] ?? '');
+        $previous_note = (string) ($creative['note'] ?? '');
         $creative['creative_url'] = esc_url_raw(wp_unslash($_POST['creative_url'] ?? $creative['creative_url'] ?? ''));
         $creative['note'] = sanitize_textarea_field(wp_unslash($_POST['sponsor_note'] ?? $creative['note'] ?? ''));
+        if ($previous_creative_url !== $creative['creative_url'] || $previous_note !== $creative['note'] || !empty($_FILES['creative_file']['name'])) {
+            $creative['creative_status'] = 'pending_review';
+        }
 
-        Repository::update_booking($booking_id, [
+        $creative_id = absint($booking['creative_id'] ?? $creative['attachment_id'] ?? 0);
+        $upload = $this->creative_upload_result($booking, is_array($slot) ? $slot : []);
+        if (is_wp_error($upload)) {
+            $this->redirect($this->manage_url($booking_id, $token), [
+                'creative_error' => $this->upload_error_code($upload) ?: 'upload_failed',
+            ]);
+        }
+
+        if (is_array($upload)) {
+            $creative = array_merge($creative, $upload);
+            $creative_id = absint($upload['attachment_id'] ?? 0);
+        }
+
+        $updated = Repository::update_booking($booking_id, [
             'sponsor_name' => wp_unslash($_POST['sponsor_name'] ?? $booking['sponsor_name'] ?? ''),
             'sponsor_email' => $booking['sponsor_email'] ?? '',
             'sponsor_url' => wp_unslash($_POST['sponsor_url'] ?? $booking['sponsor_url'] ?? ''),
             'status' => $booking['status'] ?? 'requested',
+            'creative_id' => $creative_id,
             'creative_payload' => $creative,
             'metadata' => $booking['metadata'] ?? [],
         ]);
+        if ($updated) {
+            HostedClient::sync_booking($updated);
+            Notifications::booking_updated($updated);
+        }
 
         $this->redirect($this->manage_url($booking_id, $token), ['updated' => '1']);
     }
@@ -258,6 +296,7 @@ trait HandlesSponsorBookings {
 
         if ($updated) {
             $this->sync_slot_for_booking_status($updated);
+            HostedClient::sync_booking($updated);
         }
     }
 
@@ -276,7 +315,12 @@ trait HandlesSponsorBookings {
             return;
         }
 
-        $this->handle_provider_payment_status(absint($source_id), 'paid' === sanitize_key((string) $status) ? 'paid' : 'cancelled', is_array($context) ? $context : []);
+        $booking_status = $this->provider_booking_status($status);
+        if ('' === $booking_status) {
+            return;
+        }
+
+        $this->handle_provider_payment_status(absint($source_id), $booking_status, is_array($context) ? $context : []);
     }
 
     /**
@@ -294,6 +338,31 @@ trait HandlesSponsorBookings {
         }
 
         return $this->manage_url(absint($booking_id), (string) $token);
+    }
+
+    private function default_currency() {
+        return Repository::default_currency();
+    }
+
+    private function provider_booking_status($status) {
+        $status = str_replace('-', '_', sanitize_key((string) $status));
+        if (in_array($status, ['paid', 'completed', 'processing'], true)) {
+            return 'paid';
+        }
+        if (in_array($status, ['requested'], true)) {
+            return 'requested';
+        }
+        if (in_array($status, ['pending', 'pending_payment', 'on_hold', 'created'], true)) {
+            return 'pending_payment';
+        }
+        if (in_array($status, ['approved', 'changes_requested', 'rejected', 'active', 'expired', 'cancelled'], true)) {
+            return $status;
+        }
+        if (in_array($status, ['failed', 'canceled', 'refunded', 'denied'], true)) {
+            return 'cancelled';
+        }
+
+        return '';
     }
 
     /**

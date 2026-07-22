@@ -2,12 +2,13 @@
 /**
  * SponsorBoard admin page panels, tables, and board management forms.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\ExportJobManager;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -27,14 +28,37 @@ trait RendersSponsorBoardAdminPage {
 
         Repository::maybe_install();
 
-        $boards = Repository::all_boards(100);
+        $board_page = Repository::boards_page(max(1, absint($_GET['board_page'] ?? 1)), 20);
+        $boards = $board_page['items'];
         $selected_id = absint($_GET['board_id'] ?? 0);
-        $selected = $selected_id ? Repository::find_board($selected_id) : ($boards[0] ?? null);
+        $selected = isset($_GET['board_id'])
+            ? ($selected_id ? Repository::find_board($selected_id) : null)
+            : ($boards[0] ?? null);
         $selected_id = absint($selected['id'] ?? 0);
         $slots = $selected_id ? Repository::slots_for_board($selected_id) : [];
-        $totals = $this->totals($boards);
+        $totals = $this->totals(Repository::all_boards(1000));
+        $booking_filters = [
+            'status' => sanitize_key(wp_unslash($_GET['booking_status'] ?? '')),
+            'search' => sanitize_text_field(wp_unslash($_GET['booking_search'] ?? '')),
+        ];
+        $booking_page = $selected_id
+            ? Repository::bookings_page($selected_id, max(1, absint($_GET['booking_page'] ?? 1)), 20, $booking_filters)
+            : ['items' => [], 'page' => 1, 'per_page' => 20, 'total' => 0, 'pages' => 1];
+        $selected_report = $selected_id ? Repository::reporting_summary($selected_id) : [];
+        $hosted = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::settings();
+        $analytics = Repository::analytics_settings();
+        $export_status = ExportJobManager::current_status();
+        $default_tab = $selected_id ? 'bookings' : 'overview';
+        $active_tab = sanitize_key(wp_unslash($_GET['tab'] ?? $default_tab));
+        $allowed_tabs = ['overview', 'boards', 'hosted'];
+        if ($selected_id) {
+            $allowed_tabs = array_merge($allowed_tabs, ['slots', 'bookings']);
+        }
+        if (!in_array($active_tab, $allowed_tabs, true)) {
+            $active_tab = $default_tab;
+        }
 
-        $this->admin_template('page.php', compact('boards', 'selected', 'selected_id', 'slots', 'totals'));
+        $this->admin_template('page.php', compact('active_tab', 'analytics', 'board_page', 'boards', 'booking_filters', 'booking_page', 'export_status', 'hosted', 'selected', 'selected_id', 'selected_report', 'slots', 'totals'));
     }
 
     private function notices() {
@@ -43,15 +67,19 @@ trait RendersSponsorBoardAdminPage {
         if (get_transient('mds_sponsorboard_activated')) {
             delete_transient('mds_sponsorboard_activated');
         }
+        $hosted_notice = get_transient('mds_sponsorboard_hosted_notice_' . get_current_user_id());
+        if ($hosted_notice) {
+            delete_transient('mds_sponsorboard_hosted_notice_' . get_current_user_id());
+        }
 
-        $this->admin_template('partials/notices.php', compact('activated', 'saved'));
+        $this->admin_template('partials/notices.php', compact('activated', 'hosted_notice', 'saved'));
     }
 
     private function metric($label, $value, $description) {
         $this->admin_template('partials/metric.php', compact('description', 'label', 'value'));
     }
 
-    private function board_list(array $boards, $selected_id) {
+    private function board_list(array $boards, $selected_id, $active_tab = 'boards') {
         $items = [];
         foreach ($boards as $board) {
             $id = absint($board['id'] ?? 0);
@@ -62,7 +90,7 @@ trait RendersSponsorBoardAdminPage {
                 'slot_count' => $slots,
                 'status' => $this->status_label((string) ($board['status'] ?? 'draft')),
                 'title' => (string) ($board['title'] ?? __('Untitled board', 'mds-sponsorboard')),
-                'url' => add_query_arg(['page' => 'mds3-sponsorboard', 'board_id' => $id], admin_url('admin.php')),
+                'url' => add_query_arg(['page' => 'mds3-sponsorboard', 'board_id' => $id, 'tab' => sanitize_key((string) $active_tab)], admin_url('admin.php')),
             ];
         }
 
@@ -76,6 +104,19 @@ trait RendersSponsorBoardAdminPage {
         $this->admin_template('partials/board-form.php', compact('board', 'settings'));
     }
 
+    private function hosted_service_panel(array $hosted, array $analytics) {
+        $this->admin_template('partials/hosted-service.php', compact('analytics', 'hosted'));
+    }
+
+    private function export_status_panel($export_status) {
+        $export_status = is_array($export_status) ? $export_status : [];
+        if (!$export_status) {
+            return;
+        }
+
+        $this->admin_template('partials/export-status.php', compact('export_status'));
+    }
+
     private function slot_create_form(array $board) {
         $position = count(Repository::slots_for_board(absint($board['id'] ?? 0))) + 1;
         $this->admin_template('partials/slot-create-form.php', compact('board', 'position'));
@@ -85,8 +126,7 @@ trait RendersSponsorBoardAdminPage {
         $this->admin_template('partials/slot-list.php', compact('board', 'slots'));
     }
 
-    private function booking_table(array $board, array $bookings) {
-        unset($board);
-        $this->admin_template('partials/booking-list.php', compact('bookings'));
+    private function booking_table(array $board, array $bookings, array $slots) {
+        $this->admin_template('partials/booking-list.php', compact('board', 'bookings', 'slots'));
     }
 }

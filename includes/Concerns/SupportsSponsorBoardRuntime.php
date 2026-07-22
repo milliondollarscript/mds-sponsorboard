@@ -2,12 +2,12 @@
 /**
  * Shared SponsorBoard runtime helpers used by handlers, REST, and rendering.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -30,26 +30,7 @@ trait SupportsSponsorBoardRuntime {
     }
 
     private function sync_slot_for_booking_status(array $booking) {
-        $slot_id = absint($booking['slot_id'] ?? 0);
-        if (!$slot_id) {
-            return;
-        }
-
-        $slot = Repository::find_slot($slot_id);
-        if (!$slot) {
-            return;
-        }
-
-        $booking_status = sanitize_key((string) ($booking['status'] ?? 'requested'));
-        if (in_array($booking_status, ['paid', 'approved', 'active'], true)) {
-            $slot_status = 'sold';
-        } elseif (in_array($booking_status, ['rejected', 'expired', 'cancelled'], true)) {
-            $slot_status = 'available';
-        } else {
-            $slot_status = 'reserved';
-        }
-
-        Repository::update_slot($slot_id, array_merge($slot, ['status' => $slot_status]));
+        Repository::refresh_slot_status(absint($booking['slot_id'] ?? 0));
     }
 
     private function manage_url($booking_id, $token) {
@@ -64,10 +45,26 @@ trait SupportsSponsorBoardRuntime {
         exit;
     }
 
+    private function checkout_redirect($url, $fallback_url = '') {
+        if (class_exists('\\MillionDollarScript\\Extensions\\Support') && method_exists('\\MillionDollarScript\\Extensions\\Support', 'external_redirect')) {
+            \MillionDollarScript\Extensions\Support::external_redirect($url, $fallback_url ?: home_url('/'));
+        }
+
+        $target = esc_url_raw((string) $url, ['http', 'https']);
+        $parts = wp_parse_url($target);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (!$target || empty($parts['host']) || !in_array($scheme, ['http', 'https'], true)) {
+            $this->redirect($fallback_url ?: home_url('/'));
+        }
+
+        wp_redirect($target, 302, 'Million Dollar Script - SponsorBoard');
+        exit;
+    }
+
     private function checkout_enabled(array $board) {
         $settings = is_array($board['settings'] ?? null) ? $board['settings'] : [];
 
-        return $this->truthy($settings['checkout_enabled'] ?? '0') && class_exists('\\MDS3\\Commerce\\Payments') && 'standalone' !== \MDS3\Commerce\Payments::active_provider_id();
+        return $this->truthy($settings['checkout_enabled'] ?? '0') && class_exists('\\MillionDollarScript\\Commerce\\Payments') && 'standalone' !== \MillionDollarScript\Commerce\Payments::active_provider_id();
     }
 
     private function release_failed_checkout(array $booking, array $slot, $checkout) {
@@ -81,7 +78,7 @@ trait SupportsSponsorBoardRuntime {
             'status' => 'cancelled',
             'metadata' => $metadata,
         ]));
-        Repository::update_slot(absint($slot['id'] ?? 0), array_merge($slot, ['status' => 'available']));
+        Repository::refresh_slot_status(absint($slot['id'] ?? 0));
     }
 
     private function sanitize_metadata(array $metadata) {
@@ -99,13 +96,17 @@ trait SupportsSponsorBoardRuntime {
         return $clean;
     }
 
-    private function rate_limited($slot_id, $context = 'request') {
-        $key = 'mds_sponsorboard_' . sanitize_key((string) $context) . '_' . md5((string) $slot_id . '|' . $this->client_hash('ip'));
-        if (get_transient($key)) {
+    private function rate_limited($slot_id, $context = 'request', $limit = 10) {
+        $limit = min(100, max(1, absint($limit)));
+        $bucket = gmdate('YmdH');
+        $hash = hash_hmac('sha256', sanitize_key((string) $context) . '|' . absint($slot_id) . '|' . $bucket . '|' . $this->client_hash('ip'), wp_salt('auth'));
+        $transient = 'mds_sponsorboard_rate_' . substr($hash, 0, 40);
+        $count = absint(get_transient($transient));
+        if ($count >= $limit) {
             return true;
         }
 
-        set_transient($key, 1, MINUTE_IN_SECONDS);
+        set_transient($transient, $count + 1, HOUR_IN_SECONDS + MINUTE_IN_SECONDS);
 
         return false;
     }

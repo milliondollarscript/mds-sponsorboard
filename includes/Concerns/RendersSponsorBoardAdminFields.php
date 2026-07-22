@@ -2,12 +2,12 @@
 /**
  * SponsorBoard admin form fields, labels, option sets, and totals.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -15,8 +15,9 @@ if (!defined('ABSPATH')) {
 
 trait RendersSponsorBoardAdminFields {
 
-    private function input($name, $label, $value, $type = 'text', $required = false, $help = '') {
+    private function input($name, $label, $value, $type = 'text', $required = false, $help = '', $readonly = false) {
         $id = $this->field_id($name);
+        $help_id = $help ? $id . '-help' : '';
         $attrs = [
             'name="' . esc_attr($name) . '"',
             'id="' . esc_attr($id) . '"',
@@ -26,11 +27,22 @@ trait RendersSponsorBoardAdminFields {
         if ($required) {
             $attrs[] = 'required';
         }
+        if ($readonly) {
+            $attrs[] = 'readonly';
+        }
+        if ($help_id) {
+            $attrs[] = 'aria-describedby="' . esc_attr($help_id) . '"';
+        }
         if ('number' === $type) {
-            $attrs[] = in_array($name, ['columns', 'position'], true) ? 'step="1"' : 'step="0.01"';
-            $attrs[] = 'min="0"';
+            $integer_fields = ['columns', 'position', 'booking_limit_per_hour', 'booking_retention_days'];
+            $attrs[] = in_array($name, $integer_fields, true) ? 'step="1"' : 'step="0.01"';
+            $attrs[] = in_array($name, ['columns', 'booking_limit_per_hour'], true) ? 'min="1"' : ('booking_retention_days' === $name ? 'min="30"' : 'min="0"');
             if ('columns' === $name) {
                 $attrs[] = 'max="12"';
+            } elseif ('booking_limit_per_hour' === $name) {
+                $attrs[] = 'max="100"';
+            } elseif ('booking_retention_days' === $name) {
+                $attrs[] = 'max="3650"';
             } elseif ('position' === $name) {
                 $attrs[] = 'max="1000000"';
             } else {
@@ -38,17 +50,19 @@ trait RendersSponsorBoardAdminFields {
             }
         }
 
-        $this->admin_template('partials/field-input.php', compact('attrs', 'help', 'id', 'label'));
+        $this->admin_template('partials/field-input.php', compact('attrs', 'help', 'help_id', 'id', 'label'));
     }
 
-    private function textarea($name, $label, $value) {
+    private function textarea($name, $label, $value, $help = '') {
         $id = $this->field_id($name);
-        $this->admin_template('partials/field-textarea.php', compact('id', 'label', 'name', 'value'));
+        $help_id = $help ? $id . '-help' : '';
+        $this->admin_template('partials/field-textarea.php', compact('help', 'help_id', 'id', 'label', 'name', 'value'));
     }
 
-    private function select($name, $label, $value, array $options) {
+    private function select($name, $label, $value, array $options, $help = '') {
         $id = $this->field_id($name);
-        $this->admin_template('partials/field-select.php', compact('id', 'label', 'name', 'options', 'value'));
+        $help_id = $help ? $id . '-help' : '';
+        $this->admin_template('partials/field-select.php', compact('help', 'help_id', 'id', 'label', 'name', 'options', 'value'));
     }
 
     private function admin_template($template, array $data = []) {
@@ -87,7 +101,7 @@ trait RendersSponsorBoardAdminFields {
             }
         }
 
-        return $totals;
+        return array_merge($totals, Repository::reporting_summary());
     }
 
     private function board_statuses() {
@@ -123,6 +137,15 @@ trait RendersSponsorBoardAdminFields {
         ];
     }
 
+    private function creative_statuses() {
+        return [
+            'pending_review' => __('Pending review', 'mds-sponsorboard'),
+            'approved' => __('Approved', 'mds-sponsorboard'),
+            'changes_requested' => __('Changes requested', 'mds-sponsorboard'),
+            'rejected' => __('Rejected', 'mds-sponsorboard'),
+        ];
+    }
+
     private function layouts() {
         return [
             'grid' => __('Grid', 'mds-sponsorboard'),
@@ -148,11 +171,15 @@ trait RendersSponsorBoardAdminFields {
     }
 
     private function default_currency() {
-        if (function_exists('get_woocommerce_currency')) {
-            return get_woocommerce_currency();
-        }
+        return Repository::default_currency();
+    }
 
-        return 'USD';
+    private function currency_locked() {
+        return Repository::currency_locked();
+    }
+
+    private function effective_currency($currency = '') {
+        return Repository::effective_currency($currency);
     }
 
     private function truthy($value) {

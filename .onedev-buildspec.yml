@@ -1,5 +1,4 @@
-# Example OneDev build specification for MDS Skeleton Plugin
-# Replace placeholders (<...>) with actual values or extend steps as needed.
+# OneDev build specification for Million Dollar Script - SponsorBoard.
 
 version: 1
 image: php:8.2-cli
@@ -19,13 +18,13 @@ steps:
 
   - name: "Run Unit Tests"
     commands:
-      - "vendor/bin/phpunit --colors=always"
+      - "composer test -- --colors=always"
 
   - name: "Prepare Release Artifact"
     commands:
       - "composer dump-autoload -o"
-      - "zip -r mds-skeleton-`date +%Y%m%d`.zip . -x 'vendor/*' '*.git*' '*.idea/*' '*.vscode/*' "
+      - "zip -r mds-sponsorboard-`date +%Y%m%d`.zip . -x 'vendor/*' '*.git*' '*.idea/*' '*.vscode/*' 'tests/*' 'phpunit.xml'"
 
 artifacts:
-  - path: "mds-skeleton-*.zip"
-    name: "Release Zip" 
+  - path: "mds-sponsorboard-*.zip"
+    name: "SponsorBoard Release Zip"

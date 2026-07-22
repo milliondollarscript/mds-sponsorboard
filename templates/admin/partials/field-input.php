@@ -2,7 +2,7 @@
 /**
  * SponsorBoard input field.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
 if (!defined('ABSPATH')) {
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     // Attribute fragments are built and escaped before this template is included.
     ?>
     <input <?php echo implode(' ', $attrs ?? []); ?> />
+    <?php if (!empty($help)) : ?>
+        <span id="<?php echo esc_attr($help_id); ?>" class="mds-sponsorboard-help"><?php echo esc_html($help); ?></span>
+    <?php endif; ?>
 </p>
-<?php if (!empty($help)) : ?>
-    <p class="description"><?php echo esc_html($help); ?></p>
-<?php endif; ?>

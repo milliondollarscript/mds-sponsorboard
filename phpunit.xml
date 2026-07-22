@@ -5,14 +5,14 @@
          stopOnFailure="false">
 
     <testsuites>
-        <testsuite name="MDS Skeleton Test Suite">
+        <testsuite name="SponsorBoard Unit Test Suite">
             <directory suffix="Test.php">tests/Unit</directory>
         </testsuite>
     </testsuites>
 
     <coverage processUncoveredFiles="true">
         <include>
-            <directory suffix=".php">src</directory>
+            <directory suffix=".php">includes</directory>
         </include>
     </coverage>
-</phpunit> 
+</phpunit>

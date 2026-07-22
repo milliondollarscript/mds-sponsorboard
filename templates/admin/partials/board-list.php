@@ -2,7 +2,7 @@
 /**
  * SponsorBoard board selector.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
 if (!defined('ABSPATH')) {
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 <?php else : ?>
     <div class="mds-sponsorboard-board-list">
         <?php foreach ($items as $item) : ?>
-            <a class="mds-sponsorboard-board-link<?php echo esc_attr(!empty($item['is_selected']) ? ' is-selected' : ''); ?>" href="<?php echo esc_url($item['url'] ?? ''); ?>">
+            <a class="mds-sponsorboard-board-link<?php echo esc_attr(!empty($item['is_selected']) ? ' is-selected' : ''); ?>" href="<?php echo esc_url($item['url'] ?? ''); ?>"<?php echo !empty($item['is_selected']) ? ' aria-current="page"' : ''; ?>>
                 <span><?php echo esc_html($item['title'] ?? __('Untitled board', 'mds-sponsorboard')); ?></span>
                 <small>
                     <?php

@@ -4,7 +4,7 @@
     --mds-sponsorboard-border: #d7dde5;
     --mds-sponsorboard-text: #111827;
     --mds-sponsorboard-muted: #4b5563;
-    --mds-sponsorboard-accent: #0f766e;
+    --mds-sponsorboard-accent: #2563eb;
     --mds-sponsorboard-warn: #b45309;
     background: var(--mds-sponsorboard-bg);
     border: 1px solid var(--mds-sponsorboard-border);
@@ -82,6 +82,30 @@
     margin-top: auto;
 }
 
+.mds-sponsorboard__creative {
+    display: grid;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.mds-sponsorboard__creative-image {
+    background: var(--mds-sponsorboard-bg);
+    border: 1px solid var(--mds-sponsorboard-border);
+    border-radius: 6px;
+    display: block;
+    height: auto;
+    max-height: 180px;
+    max-width: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.mds-sponsorboard__creative span,
+.mds-sponsorboard__creative a {
+    color: var(--mds-sponsorboard-text);
+    font-weight: 700;
+}
+
 .mds-sponsorboard--strip .mds-sponsorboard__slots {
     grid-auto-columns: minmax(220px, 1fr);
     grid-auto-flow: column;
@@ -149,9 +173,32 @@
     font-weight: 700;
 }
 
+.mds-sponsorboard__request small,
+.mds-sponsorboard-manage small,
+.mds-sponsorboard__form-note,
+.mds-sponsorboard-manage__summary {
+    color: var(--mds-sponsorboard-muted);
+    display: block;
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.mds-sponsorboard__form-note {
+    background: var(--mds-sponsorboard-panel);
+    border: 1px solid var(--mds-sponsorboard-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.mds-sponsorboard-manage__summary {
+    margin-top: 8px;
+}
+
 .mds-sponsorboard__request input,
 .mds-sponsorboard__request textarea,
 .mds-sponsorboard-manage input,
+.mds-sponsorboard-manage input[type="file"],
 .mds-sponsorboard-manage textarea {
     background: var(--mds-sponsorboard-bg) !important;
     border: 1px solid var(--mds-sponsorboard-border) !important;
@@ -180,7 +227,7 @@
     --mds-sponsorboard-border: #d7dde5;
     --mds-sponsorboard-text: #111827;
     --mds-sponsorboard-muted: #4b5563;
-    --mds-sponsorboard-accent: #0f766e;
+    --mds-sponsorboard-accent: #2563eb;
     align-items: start;
     background: var(--mds-sponsorboard-panel) !important;
     color: var(--mds-sponsorboard-text);
@@ -239,8 +286,55 @@
 }
 
 .mds-sponsorboard-notice {
-    color: var(--mds-sponsorboard-text);
+    background: #f8fafc !important;
+    border-color: #64748b;
+    color: #1f2937;
     margin-bottom: 16px;
+}
+
+.mds-sponsorboard-notice--success {
+    background: #ecfdf3 !important;
+    border-color: #15803d;
+    color: #14532d;
+}
+
+.mds-sponsorboard-notice--error {
+    background: #fff1f2 !important;
+    border-color: #be123c;
+    color: #881337;
+}
+
+.mds-sponsorboard__consent {
+    align-items: flex-start !important;
+    display: flex !important;
+    gap: 10px !important;
+}
+
+.mds-sponsorboard__consent input {
+    flex: 0 0 auto;
+    margin-top: 4px;
+    width: auto !important;
+}
+
+.mds-sponsorboard__consent a {
+    margin-left: 6px;
+}
+
+.mds-sponsorboard-manage__creative {
+    background: var(--mds-sponsorboard-panel) !important;
+    border: 1px solid var(--mds-sponsorboard-border);
+    border-radius: 6px;
+    margin: 0 0 16px;
+    padding: 12px;
+}
+
+.mds-sponsorboard-manage__creative-image {
+    display: block;
+    height: auto;
+    max-height: 280px;
+    max-width: 100%;
+    object-fit: contain;
+    width: 100%;
 }
 
 .mds-sponsorboard__status {
@@ -263,9 +357,9 @@
 }
 
 .mds-sponsorboard__slot--sold .mds-sponsorboard__status {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #3730a3;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
 }
 
 .mds3-theme-light.mds-sponsorboard {
@@ -274,7 +368,7 @@
     --mds-sponsorboard-border: #d7dde5;
     --mds-sponsorboard-text: #111827;
     --mds-sponsorboard-muted: #4b5563;
-    --mds-sponsorboard-accent: #0f766e;
+    --mds-sponsorboard-accent: #2563eb;
     --mds-sponsorboard-warn: #b45309;
     background: var(--mds-sponsorboard-bg) !important;
     border-color: var(--mds-sponsorboard-border) !important;
@@ -310,15 +404,27 @@
     --mds-sponsorboard-border: #334155;
     --mds-sponsorboard-text: #f8fafc;
     --mds-sponsorboard-muted: #cbd5e1;
-    --mds-sponsorboard-accent: #2dd4bf;
+    --mds-sponsorboard-accent: #60a5fa;
     --mds-sponsorboard-warn: #fbbf24;
+}
+
+.mds-sponsorboard-manage.mds3-theme-dark .mds-sponsorboard-notice--success {
+    background: #12351f !important;
+    border-color: #4ade80;
+    color: #dcfce7;
+}
+
+.mds-sponsorboard-manage.mds3-theme-dark .mds-sponsorboard-notice--error {
+    background: #451a25 !important;
+    border-color: #fb7185;
+    color: #ffe4e6;
 }
 
 .mds3-theme-dark .mds-sponsorboard__status,
 .mds-sponsorboard.mds3-theme-dark .mds-sponsorboard__status {
-    background: rgba(20, 184, 166, 0.14);
-    border-color: rgba(45, 212, 191, 0.38);
-    color: #99f6e4;
+    background: rgba(22, 163, 74, 0.16);
+    border-color: rgba(134, 239, 172, 0.38);
+    color: #86efac;
 }
 
 .mds3-theme-dark .mds-sponsorboard__slot--reserved .mds-sponsorboard__status,
@@ -332,9 +438,9 @@
 
 .mds3-theme-dark .mds-sponsorboard__slot--sold .mds-sponsorboard__status,
 .mds-sponsorboard.mds3-theme-dark .mds-sponsorboard__slot--sold .mds-sponsorboard__status {
-    background: rgba(79, 70, 229, 0.16);
-    border-color: rgba(129, 140, 248, 0.42);
-    color: #c7d2fe;
+    background: rgba(96, 165, 250, 0.16);
+    border-color: rgba(147, 197, 253, 0.42);
+    color: #bfdbfe;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -346,8 +452,20 @@
         --mds-sponsorboard-border: #334155;
         --mds-sponsorboard-text: #f8fafc;
         --mds-sponsorboard-muted: #cbd5e1;
-        --mds-sponsorboard-accent: #2dd4bf;
+        --mds-sponsorboard-accent: #60a5fa;
         --mds-sponsorboard-warn: #fbbf24;
+    }
+
+    .mds-sponsorboard-manage.mds3-theme-system .mds-sponsorboard-notice--success {
+        background: #12351f !important;
+        border-color: #4ade80;
+        color: #dcfce7;
+    }
+
+    .mds-sponsorboard-manage.mds3-theme-system .mds-sponsorboard-notice--error {
+        background: #451a25 !important;
+        border-color: #fb7185;
+        color: #ffe4e6;
     }
 }
 

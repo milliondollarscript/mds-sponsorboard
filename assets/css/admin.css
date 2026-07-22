@@ -2,6 +2,70 @@
     max-width: 1280px;
 }
 
+.mds-sponsorboard-tabs {
+    margin: 0 0 16px;
+}
+
+.mds-sponsorboard-admin .notice-success {
+    background: #ecfdf3;
+    border-color: #15803d;
+    color: #14532d;
+}
+
+.mds-sponsorboard-admin .notice-warning {
+    background: #fffbeb;
+    border-color: #b45309;
+    color: #78350f;
+}
+
+.mds-sponsorboard-admin .notice-error {
+    background: #fff1f2;
+    border-color: #be123c;
+    color: #881337;
+}
+
+.mds-sponsorboard-admin .notice p {
+    color: inherit;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-success {
+    background: #12351f;
+    border-color: #4ade80;
+    color: #dcfce7;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-warning {
+    background: #422006;
+    border-color: #f59e0b;
+    color: #fef3c7;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-error {
+    background: #451a25;
+    border-color: #fb7185;
+    color: #ffe4e6;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.mds3-admin-theme-system .mds-sponsorboard-admin .notice-success {
+        background: #12351f;
+        border-color: #4ade80;
+        color: #dcfce7;
+    }
+
+    body.mds3-admin-theme-system .mds-sponsorboard-admin .notice-warning {
+        background: #422006;
+        border-color: #f59e0b;
+        color: #fef3c7;
+    }
+
+    body.mds3-admin-theme-system .mds-sponsorboard-admin .notice-error {
+        background: #451a25;
+        border-color: #fb7185;
+        color: #ffe4e6;
+    }
+}
+
 .mds-sponsorboard-hero {
     align-items: center;
     display: flex;
@@ -33,7 +97,8 @@
 }
 
 .mds-sponsorboard-hero-actions,
-.mds-sponsorboard-slot-create {
+.mds-sponsorboard-slot-create,
+.mds-sponsorboard-export-actions {
     align-items: end;
     display: flex;
     flex-wrap: wrap;
@@ -135,6 +200,59 @@
     grid-column: 1 / -1;
 }
 
+.mds-sponsorboard-hosted {
+    margin: 16px 0;
+}
+
+.mds-sponsorboard-hosted__form > label:not(.mds-sponsorboard-check) {
+    display: grid;
+    gap: 6px;
+}
+
+.mds-sponsorboard-hosted__form > label:not(.mds-sponsorboard-check) span,
+.mds-sponsorboard-check span {
+    color: var(--mds3-admin-text);
+    font-weight: 600;
+}
+
+.mds-sponsorboard-hosted__form input[type="url"],
+.mds-sponsorboard-hosted__form input[type="password"],
+.mds-sponsorboard-hosted__form input[type="number"] {
+    background: var(--mds3-admin-surface);
+    border-color: var(--mds3-admin-border);
+    color: var(--mds3-admin-text);
+    max-width: 100%;
+    width: 100%;
+}
+
+.mds-sponsorboard-check {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.mds-sponsorboard-hosted__meta,
+.mds-sponsorboard-form-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    grid-column: 1 / -1;
+}
+
+.mds-sponsorboard-hosted__meta {
+    color: var(--mds3-admin-muted);
+}
+
+.mds-sponsorboard-hosted__error {
+    color: #b42318;
+}
+
+.mds-sponsorboard-form-actions .submit {
+    margin: 0;
+    padding: 0;
+}
+
 .mds-sponsorboard-slot-create {
     margin-bottom: 16px;
 }
@@ -160,13 +278,34 @@
 .mds-sponsorboard-field textarea {
     background: var(--mds3-admin-surface);
     border-color: var(--mds3-admin-border);
+    box-sizing: border-box;
     color: var(--mds3-admin-text);
+    margin: 0;
     max-width: 100%;
+    min-width: 0;
     width: 100%;
 }
 
 .mds-sponsorboard-field textarea {
     resize: vertical;
+}
+
+.mds-sponsorboard-help,
+.mds-sponsorboard-check small {
+    color: var(--mds3-admin-muted);
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.45;
+    margin-top: 6px;
+}
+
+.mds-sponsorboard-check {
+    align-items: flex-start;
+}
+
+.mds-sponsorboard-check input {
+    margin-top: 2px;
 }
 
 .mds-sponsorboard-slot-list {
@@ -190,15 +329,162 @@
     gap: 12px;
 }
 
-.mds-sponsorboard-booking-card {
+.mds-sponsorboard-booking-filters {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 16px;
+}
+
+.mds-sponsorboard-booking-filters label {
+    display: grid;
+    flex: 1 1 220px;
+    gap: 6px;
+    max-width: 360px;
+}
+
+.mds-sponsorboard-booking-filters label span,
+.mds-sponsorboard-booking-card > .mds-sponsorboard-field > span {
+    color: var(--mds3-admin-text);
+    font-weight: 600;
+}
+
+.mds-sponsorboard-booking-filters input,
+.mds-sponsorboard-booking-filters select {
+    background: var(--mds3-admin-surface);
+    border-color: var(--mds3-admin-border);
+    box-sizing: border-box;
+    color: var(--mds3-admin-text);
+    margin: 0;
+    min-width: 0;
+    width: 100%;
+}
+
+.mds-sponsorboard-booking-card > .mds-sponsorboard-field small {
+    color: var(--mds3-admin-muted);
+    display: block;
+    font-size: 12px;
+    line-height: 1.4;
+    margin-top: 6px;
+}
+
+.mds-sponsorboard-pagination ul.page-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+}
+
+.mds-sponsorboard-pagination ul.page-numbers > li > a,
+.mds-sponsorboard-pagination ul.page-numbers > li > span {
     align-items: center;
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--mds3-admin-text);
+    display: inline-flex;
+    justify-content: center;
+    min-height: 40px;
+    min-width: 44px;
+    padding: 7px 16px;
+    text-decoration: none;
+}
+
+.mds-sponsorboard-pagination ul.page-numbers > li > .prev,
+.mds-sponsorboard-pagination ul.page-numbers > li > .next {
+    padding-inline: 24px;
+}
+
+.mds-sponsorboard-pagination ul.page-numbers > li > .current {
+    background: var(--mds3-admin-accent);
+    border-color: var(--mds3-admin-accent);
+    color: #ffffff;
+}
+
+.mds-sponsorboard-export-status {
     background: var(--mds3-admin-surface-subtle);
     border: 1px solid var(--mds3-admin-border);
     border-radius: 8px;
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(220px, 1fr) auto auto minmax(160px, 220px) auto;
+    margin: 0 0 16px;
     padding: 14px;
+}
+
+.mds-sponsorboard-export-status strong {
+    color: var(--mds3-admin-text);
+    display: block;
+    font-size: 14px;
+}
+
+.mds-sponsorboard-export-status p {
+    color: var(--mds3-admin-muted);
+    margin: 4px 0 0;
+}
+
+.mds-sponsorboard-export-progress {
+    background: var(--mds3-admin-surface);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.mds-sponsorboard-export-progress span {
+    background: var(--mds3-admin-accent);
+    display: block;
+    height: 100%;
+    min-width: 2px;
+}
+
+.mds-sponsorboard-booking-card {
+    align-items: start;
+    background: var(--mds3-admin-surface-subtle);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    max-width: 100%;
+    min-width: 0;
+    padding: 14px;
+    width: 100%;
+}
+
+.mds-sponsorboard-booking-summary {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px 24px;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.mds-sponsorboard-booking-identity {
+    min-width: 0;
+}
+
+.mds-sponsorboard-booking-identity strong,
+.mds-sponsorboard-booking-identity span {
+    overflow-wrap: anywhere;
+}
+
+.mds-sponsorboard-booking-links {
+    align-items: center;
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    justify-content: flex-end;
+}
+
+.mds-sponsorboard-booking-links a {
+    white-space: nowrap;
 }
 
 .mds-sponsorboard-booking-card strong,
@@ -211,9 +497,99 @@
     margin-top: 4px;
 }
 
-.mds-sponsorboard-booking-card .submit {
+.mds-sponsorboard-booking-timezone {
+    color: var(--mds3-admin-muted);
+    margin: 0 0 14px;
+}
+
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle {
+    background: var(--mds3-admin-surface);
+    border: 1px solid var(--mds3-admin-border);
+    border-radius: 999px;
+    color: var(--mds3-admin-text);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-top: 8px;
+    padding: 4px 9px;
+}
+
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--active {
+    background: #e7f6ec;
+    border-color: #68a97c;
+    color: #175c2d;
+}
+
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--scheduled {
+    background: #fff5d6;
+    border-color: #c79218;
+    color: #694b00;
+}
+
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--expired,
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--cancelled,
+.mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--rejected {
+    background: #f2f3f5;
+    border-color: #9aa0a8;
+    color: #3e444c;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--active {
+    background: #173c25;
+    border-color: #70b987;
+    color: #c8f2d5;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--scheduled {
+    background: #46360d;
+    border-color: #d3a936;
+    color: #ffe9a7;
+}
+
+body.mds3-admin-theme-dark .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--expired,
+body.mds3-admin-theme-dark .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--cancelled,
+body.mds3-admin-theme-dark .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--rejected {
+    background: #30343a;
+    border-color: #737b86;
+    color: #e2e5e9;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.mds3-admin-theme-system .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--active {
+        background: #173c25;
+        border-color: #70b987;
+        color: #c8f2d5;
+    }
+
+    body.mds3-admin-theme-system .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--scheduled {
+        background: #46360d;
+        border-color: #d3a936;
+        color: #ffe9a7;
+    }
+
+    body.mds3-admin-theme-system .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--expired,
+    body.mds3-admin-theme-system .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--cancelled,
+    body.mds3-admin-theme-system .mds-sponsorboard-booking-identity .mds-sponsorboard-lifecycle--rejected {
+        background: #30343a;
+        border-color: #737b86;
+        color: #e2e5e9;
+    }
+}
+
+.mds-sponsorboard-booking-actions {
+    align-self: end;
+}
+
+.mds-sponsorboard-booking-card .submit,
+.mds-sponsorboard-booking-actions .button {
     margin: 0;
     padding: 0;
+}
+
+.mds-sponsorboard-booking-actions .button {
+    min-height: 32px;
+    padding: 0 12px;
 }
 
 .mds3-card-heading code {
@@ -242,7 +618,69 @@
         grid-template-columns: 1fr;
     }
 
+    .mds-sponsorboard-booking-summary {
+        display: block;
+    }
+
+    .mds-sponsorboard-booking-links {
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+
+    .mds-sponsorboard-layout--bookings .mds-sponsorboard-board-list {
+        max-height: 360px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-right: 4px;
+        scrollbar-gutter: stable;
+    }
+
     .mds-sponsorboard-layout > .mds3-card {
         margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 600px) {
+    .mds-sponsorboard-hero {
+        padding: 18px;
+    }
+
+    .mds-sponsorboard-hero h2 {
+        font-size: 24px;
+        line-height: 1.25;
+    }
+
+    .mds-sponsorboard-hero p {
+        font-size: 14px;
+    }
+
+    .mds-sponsorboard-hero-actions {
+        align-items: stretch;
+    }
+
+    .mds-sponsorboard-hero-actions .button {
+        flex: 1 1 130px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .mds-sponsorboard-metrics {
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mds-sponsorboard-metrics article {
+        min-width: 0;
+        padding: 12px;
+    }
+
+    .mds-sponsorboard-metrics strong {
+        font-size: 22px;
+        overflow-wrap: anywhere;
+    }
+
+    .mds-sponsorboard-metrics small {
+        font-size: 11px;
+        line-height: 1.4;
     }
 }

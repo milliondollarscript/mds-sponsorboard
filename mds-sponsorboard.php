@@ -1,20 +1,22 @@
 <?php
 /**
- * Plugin Name: Million Dollar Script SponsorBoard
+ * Plugin Name: Million Dollar Script - SponsorBoard
  * Plugin URI: https://milliondollarscript.com/extensions/sponsorboard
  * Description: Sell and manage sponsor boards, slots, bookings, and creatives from Million Dollar Script.
- * Version: 0.1.0
+ * Version: 1.3.0
  * Author: Million Dollar Script
  * Author URI: https://milliondollarscript.com
  * Text Domain: mds-sponsorboard
  * Domain Path: /languages
  * Requires at least: 6.0
+ * Tested up to: 7.0.2
  * Requires PHP: 8.1
  * License: GPL-3.0+
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Requires Plugins: million-dollar-script
  *
  * Requires MDS: 3.0.0
+ * Requires MDS API: 1
  * Requires License: No
  * MDS Provides: inventory.sponsorboard sponsorship.inventory
  * MDS Requires: platform.core
@@ -22,19 +24,19 @@
  * MDS Requires Service: no
  * MDS Setup Category: monetization
  * MDS Minimum Security Level: api_key_read
- * MDS LLM Safe Actions: read_boards read_slots read_bookings
+ * MDS LLM Safe Actions: read_boards read_slots
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard;
+namespace MillionDollarScript\Extensions\SponsorBoard;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 if (!defined('MDS_SPONSORBOARD_VERSION')) {
-    define('MDS_SPONSORBOARD_VERSION', '0.1.0');
+    define('MDS_SPONSORBOARD_VERSION', '1.3.0');
 }
 
 if (!defined('MDS_SPONSORBOARD_FILE')) {
@@ -59,8 +61,8 @@ if (!defined('MDS_SPONSORBOARD_BASENAME')) {
  * @return bool
  */
 function mds_sponsorboard_check_mds_active() {
-    return (class_exists('\\MDS\\Core\\Plugin') && function_exists('mds_initialize'))
-        || (class_exists('\\MDS3\\Plugin') && defined('MDS3_VERSION'));
+    return class_exists('\\MillionDollarScript\\Core\\Runtime')
+        && \MillionDollarScript\Core\Runtime::is_ready();
 }
 
 /**
@@ -70,7 +72,7 @@ function mds_sponsorboard_check_mds_active() {
  */
 function mds_sponsorboard_missing_mds_notice() {
     echo '<div class="notice notice-error"><p>';
-    echo '<strong>' . esc_html__('Million Dollar Script SponsorBoard', 'mds-sponsorboard') . '</strong>: ';
+    echo '<strong>' . esc_html__('Million Dollar Script - SponsorBoard', 'mds-sponsorboard') . '</strong>: ';
     echo esc_html__('This extension requires the Million Dollar Script plugin to be installed and activated.', 'mds-sponsorboard');
     echo ' <a href="' . esc_url(admin_url('plugins.php')) . '">' . esc_html__('Manage Plugins', 'mds-sponsorboard') . '</a>';
     echo '</p></div>';
@@ -82,17 +84,10 @@ function mds_sponsorboard_missing_mds_notice() {
  * @return void
  */
 function mds_sponsorboard_load_files() {
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Repository.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/HandlesSponsorBoardAdminRequests.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/RendersSponsorBoardAdminPage.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/RendersSponsorBoardAdminFields.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Admin.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/RegistersSponsorBoardBlocks.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/HandlesSponsorBookings.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/HandlesSponsorBoardRestApi.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/RendersSponsorBoardFrontend.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Concerns/SupportsSponsorBoardRuntime.php';
-    require_once MDS_SPONSORBOARD_PATH . 'includes/Main.php';
+    \MillionDollarScript\Extensions\Support::register_autoloader(
+        __NAMESPACE__,
+        MDS_SPONSORBOARD_PATH . 'includes'
+    );
 }
 
 /**
@@ -122,8 +117,8 @@ function mds_sponsorboard_register_extension() {
 
     mds_sponsorboard_load_files();
 
-    if (class_exists('\\MDS\\Core\\Extensions\\Manager')) {
-        \MDS\Core\Extensions\Manager::register([
+    if (class_exists('\\MillionDollarScript\\Extensions\\Registry')) {
+        \MillionDollarScript\Extensions\Registry::register([
             'id' => 'mds-sponsorboard',
             'name' => 'SponsorBoard',
             'description' => 'Sell and manage sponsor inventory without a hosted service dependency.',
@@ -139,7 +134,7 @@ function mds_sponsorboard_register_extension() {
                 'frontend_assets' => true,
                 'api' => true,
             ],
-            'init_callback' => ['\\MDS\\Extensions\\SponsorBoard\\Main', 'init'],
+            'init_callback' => ['\\MillionDollarScript\\Extensions\\SponsorBoard\\Main', 'init'],
         ]);
     }
 }
@@ -153,7 +148,7 @@ function mds_sponsorboard_activate() {
     if (!mds_sponsorboard_check_mds_active()) {
         deactivate_plugins(MDS_SPONSORBOARD_BASENAME);
         wp_die(
-            esc_html__('Million Dollar Script SponsorBoard requires the Million Dollar Script plugin to be installed and activated.', 'mds-sponsorboard'),
+            esc_html__('Million Dollar Script - SponsorBoard requires the Million Dollar Script plugin to be installed and activated.', 'mds-sponsorboard'),
             esc_html__('Plugin Activation Error', 'mds-sponsorboard'),
             ['back_link' => true]
         );
@@ -162,6 +157,10 @@ function mds_sponsorboard_activate() {
     mds_sponsorboard_load_files();
     Repository::install();
     Repository::maybe_seed();
+    BookingLifecycle::schedule();
+    if (!wp_next_scheduled('mds_sponsorboard_cleanup_events')) {
+        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'mds_sponsorboard_cleanup_events');
+    }
     set_transient('mds_sponsorboard_activated', true, 30);
 }
 
@@ -172,10 +171,12 @@ function mds_sponsorboard_activate() {
  */
 function mds_sponsorboard_deactivate() {
     delete_transient('mds_sponsorboard_activated');
+    BookingLifecycle::unschedule();
+    wp_clear_scheduled_hook('mds_sponsorboard_cleanup_events');
 }
 
 register_activation_hook(__FILE__, __NAMESPACE__ . '\\mds_sponsorboard_activate');
 register_deactivation_hook(__FILE__, __NAMESPACE__ . '\\mds_sponsorboard_deactivate');
 
 add_action('plugins_loaded', __NAMESPACE__ . '\\mds_sponsorboard_init', 20);
-add_action('mds_register_extensions', __NAMESPACE__ . '\\mds_sponsorboard_register_extension');
+add_action('million-dollar-script/register/extensions', __NAMESPACE__ . '\\mds_sponsorboard_register_extension');

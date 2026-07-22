@@ -2,7 +2,7 @@
 /**
  * SponsorBoard metric card.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
 if (!defined('ABSPATH')) {

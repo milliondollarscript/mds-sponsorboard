@@ -2,12 +2,12 @@
 /**
  * SponsorBoard shortcode, block, and asset registration.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -19,14 +19,13 @@ trait RegistersSponsorBoardBlocks {
         add_shortcode('mds_sponsorboard', [$this, 'shortcode']);
     }
 
-    /**
-     * Enqueue public assets only when WordPress asks for them.
-     *
-     * @return void
-     */
-
     public function frontend_assets() {
-        wp_enqueue_style('mds-sponsorboard', MDS_SPONSORBOARD_URL . 'assets/css/style.css', [], MDS_SPONSORBOARD_VERSION);
+        wp_register_style('mds-sponsorboard', MDS_SPONSORBOARD_URL . 'assets/css/style.css', [], MDS_SPONSORBOARD_VERSION);
+        wp_register_script('mds-sponsorboard', MDS_SPONSORBOARD_URL . 'assets/js/script.js', [], MDS_SPONSORBOARD_VERSION, true);
+        \MillionDollarScript\Extensions\Support::add_browser_config('mds-sponsorboard', 'sponsorBoard', 'config', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('mds_sponsorboard_track'),
+        ]);
     }
 
     /**
@@ -42,10 +41,16 @@ trait RegistersSponsorBoardBlocks {
 
         register_block_type('mds/sponsorboard', [
             'api_version' => $this->block_api_version(),
-            'title' => __('Million Dollar Script SponsorBoard', 'mds-sponsorboard'),
-            'category' => 'widgets',
+            'title' => __('SponsorBoard', 'mds-sponsorboard'),
+            'category' => 'million-dollar-script',
             'icon' => 'megaphone',
             'description' => __('Display a SponsorBoard from Million Dollar Script.', 'mds-sponsorboard'),
+            'keywords' => [
+                __('MDS', 'mds-sponsorboard'),
+                __('Million Dollar Script', 'mds-sponsorboard'),
+                __('SponsorBoard', 'mds-sponsorboard'),
+                __('sponsors', 'mds-sponsorboard'),
+            ],
             'attributes' => [
                 'id' => [
                     'type' => 'number',
@@ -71,18 +76,41 @@ trait RegistersSponsorBoardBlocks {
      */
 
     public function block_editor_assets() {
+        $script_path = MDS_SPONSORBOARD_PATH . 'assets/js/blocks.js';
+
         wp_enqueue_script(
             'mds-sponsorboard-blocks',
             MDS_SPONSORBOARD_URL . 'assets/js/blocks.js',
             ['wp-blocks', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-element', 'wp-i18n'],
-            MDS_SPONSORBOARD_VERSION,
+            $this->block_asset_version($script_path),
             true
         );
-        wp_enqueue_style('mds-sponsorboard-blocks', MDS_SPONSORBOARD_URL . 'assets/css/blocks.css', [], MDS_SPONSORBOARD_VERSION);
-        wp_localize_script('mds-sponsorboard-blocks', 'MDSSponsorBoardBlocks', [
+        $this->enqueue_block_editor_styles();
+        \MillionDollarScript\Extensions\Support::add_browser_config('mds-sponsorboard-blocks', 'sponsorBoard', 'blocks', [
             'boards' => $this->block_boards(),
             'blockApiVersion' => $this->block_api_version(),
+            'blockCategory' => 'million-dollar-script',
         ]);
+    }
+
+    public function block_canvas_assets() {
+        if (!is_admin()) {
+            return;
+        }
+
+        $this->enqueue_block_editor_styles();
+    }
+
+    private function enqueue_block_editor_styles() {
+        $style_path = MDS_SPONSORBOARD_PATH . 'assets/css/blocks.css';
+
+        wp_enqueue_style('mds-sponsorboard-blocks', MDS_SPONSORBOARD_URL . 'assets/css/blocks.css', [], $this->block_asset_version($style_path));
+    }
+
+    private function block_asset_version($path) {
+        $mtime = file_exists((string) $path) ? filemtime((string) $path) : false;
+
+        return $mtime ? MDS_SPONSORBOARD_VERSION . '.' . $mtime : MDS_SPONSORBOARD_VERSION;
     }
 
     /**
@@ -133,5 +161,21 @@ trait RegistersSponsorBoardBlocks {
         $wp_version = function_exists('get_bloginfo') ? (string) get_bloginfo('version') : '';
 
         return version_compare($wp_version, '6.3', '>=') ? 3 : 2;
+    }
+
+    private function enqueue_frontend_assets() {
+        if (!wp_style_is('mds-sponsorboard', 'registered')) {
+            wp_register_style('mds-sponsorboard', MDS_SPONSORBOARD_URL . 'assets/css/style.css', [], MDS_SPONSORBOARD_VERSION);
+        }
+        if (!wp_script_is('mds-sponsorboard', 'registered')) {
+            wp_register_script('mds-sponsorboard', MDS_SPONSORBOARD_URL . 'assets/js/script.js', [], MDS_SPONSORBOARD_VERSION, true);
+            \MillionDollarScript\Extensions\Support::add_browser_config('mds-sponsorboard', 'sponsorBoard', 'config', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('mds_sponsorboard_track'),
+            ]);
+        }
+
+        wp_enqueue_style('mds-sponsorboard');
+        wp_enqueue_script('mds-sponsorboard');
     }
 }

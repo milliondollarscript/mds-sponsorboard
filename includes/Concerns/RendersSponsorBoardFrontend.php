@@ -2,12 +2,12 @@
 /**
  * SponsorBoard shortcode output, request forms, and sponsor manage pages.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard\Concerns;
+namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MDS\Extensions\SponsorBoard\Repository;
+use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -28,9 +28,11 @@ trait RendersSponsorBoardFrontend {
             wp_die(esc_html__('This sponsor manage link is invalid or expired.', 'mds-sponsorboard'));
         }
 
+        $this->enqueue_frontend_assets();
         nocache_headers();
         if (!headers_sent()) {
-            header('X-Robots-Tag: noindex, nofollow', true);
+            header('X-Robots-Tag: noindex, nofollow, noarchive', true);
+            header('Referrer-Policy: no-referrer', true);
         }
 
         $this->render_manage_document($booking, $token);
@@ -58,7 +60,7 @@ trait RendersSponsorBoardFrontend {
         } elseif (!empty($atts['slug'])) {
             $board = Repository::find_board_by_slug((string) $atts['slug']);
         } else {
-            foreach (Repository::all_boards(1) as $candidate) {
+            foreach ($this->default_board_candidates() as $candidate) {
                 $board = $candidate;
                 break;
             }
@@ -73,7 +75,7 @@ trait RendersSponsorBoardFrontend {
             return '';
         }
 
-        wp_enqueue_style('mds-sponsorboard');
+        $this->enqueue_frontend_assets();
 
         return $this->render_board($board, [
             'show_available' => $this->truthy($atts['show_available'] ?? '1'),
@@ -94,13 +96,31 @@ trait RendersSponsorBoardFrontend {
             return 'archived' !== $status && ($show_available || 'available' !== $status);
         });
 
+        $public_bookings = [];
+        foreach ($slots as $slot) {
+            $slot_id = absint($slot['id'] ?? 0);
+            if ($slot_id) {
+                $public_bookings[$slot_id] = Repository::public_booking_for_slot($slot_id);
+            }
+        }
+
         return $this->render_template('frontend/board.php', [
             'board' => $board,
             'columns' => $columns,
             'disclosure' => $disclosure,
             'layout' => $layout,
+            'public_bookings' => $public_bookings,
             'slots' => $slots,
         ]);
+    }
+
+    private function default_board_candidates() {
+        $boards = Repository::all_boards(100);
+        $active = array_values(array_filter($boards, static function ($board) {
+            return 'active' === (string) ($board['status'] ?? '');
+        }));
+
+        return $active ?: $boards;
     }
 
     private function checkout_form(array $board, array $slot) {
@@ -119,10 +139,13 @@ trait RendersSponsorBoardFrontend {
 
     private function render_manage_page(array $booking, $token) {
         $creative = is_array($booking['creative_payload'] ?? null) ? $booking['creative_payload'] : [];
+        $slot = Repository::find_slot(absint($booking['slot_id'] ?? 0));
 
         return $this->render_template('frontend/manage-page.php', [
             'booking' => $booking,
             'creative' => $creative,
+            'stats' => Repository::booking_event_summary(absint($booking['id'] ?? 0)),
+            'slot' => is_array($slot) ? $slot : [],
             'token' => $token,
         ]);
     }
@@ -170,10 +193,56 @@ trait RendersSponsorBoardFrontend {
         return $labels[sanitize_key((string) $status)] ?? ucfirst((string) $status);
     }
 
+    private function creative_status_label($status) {
+        $labels = [
+            'pending_review' => __('Pending review', 'mds-sponsorboard'),
+            'approved' => __('Approved', 'mds-sponsorboard'),
+            'changes_requested' => __('Changes requested', 'mds-sponsorboard'),
+            'rejected' => __('Rejected', 'mds-sponsorboard'),
+        ];
+
+        return $labels[sanitize_key((string) $status)] ?? __('Pending review', 'mds-sponsorboard');
+    }
+
+    private function render_public_creative(array $booking) {
+        $creative = is_array($booking['creative_payload'] ?? null) ? $booking['creative_payload'] : [];
+        if ('approved' !== sanitize_key((string) ($creative['creative_status'] ?? ''))) {
+            return '';
+        }
+
+        $attachment_id = absint($booking['creative_id'] ?? $creative['attachment_id'] ?? 0);
+        $image = '';
+        if ($attachment_id) {
+            $image = wp_get_attachment_image($attachment_id, 'medium_large', false, [
+                'class' => 'mds-sponsorboard__creative-image',
+                'loading' => 'lazy',
+            ]);
+        }
+
+        $name = trim((string) ($booking['sponsor_name'] ?? ''));
+        $url = esc_url((string) ($booking['sponsor_url'] ?? ''));
+        $label = $name ?: __('Sponsor', 'mds-sponsorboard');
+        if ($url) {
+            $label = sprintf(
+                '<a href="%s" target="_blank" rel="nofollow sponsored noopener noreferrer" data-mds-sponsorboard-track="click">%s</a>',
+                $url,
+                esc_html($label)
+            );
+        } else {
+            $label = esc_html($label);
+        }
+
+        return '<div class="mds-sponsorboard__creative">' . $image . '<span>' . $label . '</span></div>';
+    }
+
     private function theme_mode() {
         $settings = get_option('mds3_settings', []);
         $mode = is_array($settings) ? sanitize_key((string) ($settings['theme_mode'] ?? 'light')) : 'light';
 
         return in_array($mode, ['light', 'dark', 'system'], true) ? $mode : 'light';
+    }
+
+    private function effective_currency($currency = '') {
+        return Repository::effective_currency($currency);
     }
 }

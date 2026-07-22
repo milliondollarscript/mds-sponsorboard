@@ -2,10 +2,10 @@
 /**
  * SponsorBoard admin UI.
  *
- * @package MDS\Extensions\SponsorBoard
+ * @package MillionDollarScript\Extensions\SponsorBoard
  */
 
-namespace MDS\Extensions\SponsorBoard;
+namespace MillionDollarScript\Extensions\SponsorBoard;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -66,14 +66,16 @@ class Admin {
         }
 
         $this->initialized = true;
-        add_action('mds3_admin_menu', [$this, 'menu']);
-        add_action('admin_head', [$this, 'hide_sidebar_menu']);
+        add_action('million-dollar-script/admin/menu', [$this, 'menu']);
         add_action('admin_enqueue_scripts', [$this, 'assets']);
-        add_filter('mds3_dashboard_menu_items', [$this, 'dashboard_menu_items']);
-        add_filter('mds3_dashboard_service_cards', [$this, 'dashboard_service_cards']);
+        add_filter('million-dollar-script/dashboard/extension/cards', [$this, 'dashboard_extension_cards']);
         add_action('admin_post_mds_sponsorboard_save_board', [$this, 'save_board']);
         add_action('admin_post_mds_sponsorboard_save_slot', [$this, 'save_slot']);
         add_action('admin_post_mds_sponsorboard_save_booking', [$this, 'save_booking']);
+        add_action('admin_post_mds_sponsorboard_save_hosted_settings', [$this, 'save_hosted_settings']);
+        add_action('admin_post_mds_sponsorboard_export_bookings', [$this, 'export_bookings']);
+        add_action('admin_post_mds_sponsorboard_export_events', [$this, 'export_events']);
+        add_action('admin_post_mds_sponsorboard_download_export', [$this, 'download_export']);
     }
 
     /**
@@ -93,15 +95,6 @@ class Admin {
     }
 
     /**
-     * Keep the WP sidebar focused on Dashboard and Extensions.
-     *
-     * @return void
-     */
-    public function hide_sidebar_menu() {
-        remove_submenu_page('mds3', 'mds3-sponsorboard');
-    }
-
-    /**
      * Enqueue extension admin assets on the SponsorBoard page.
      *
      * @param string $hook Current page hook.
@@ -116,42 +109,41 @@ class Admin {
     }
 
     /**
-     * Add SponsorBoard to the Million Dollar Script dashboard menu.
+     * Add SponsorBoard quick actions to the dashboard Extensions section.
      *
-     * @param array $groups Menu groups.
+     * @param array $cards Dashboard extension cards keyed by slug.
      * @return array
      */
-    public function dashboard_menu_items(array $groups) {
-        if (!isset($groups['manage']['items']) || !is_array($groups['manage']['items'])) {
-            $groups['manage'] = [
-                'label' => __('Manage', 'mds-sponsorboard'),
-                'items' => [],
-            ];
-        }
-
-        $groups['manage']['items'][] = [
-            'label' => __('SponsorBoard', 'mds-sponsorboard'),
-            'url' => admin_url('admin.php?page=mds3-sponsorboard'),
-            'icon' => 'dashicons-megaphone',
+    public function dashboard_extension_cards(array $cards) {
+        $slug = 'mds-sponsorboard';
+        $card = isset($cards[$slug]) && is_array($cards[$slug]) ? $cards[$slug] : [
+            'slug' => $slug,
+            'name' => __('SponsorBoard', 'mds-sponsorboard'),
+            'description' => __('Sell fixed sponsor slots, featured placements, launch partners, and supporter inventory alongside your pixel grids.', 'mds-sponsorboard'),
+            'active' => true,
+            'installed' => true,
+            'actions' => [],
         ];
 
-        return $groups;
-    }
-
-    /**
-     * Add an active-extension service card.
-     *
-     * @param array $cards Dashboard service cards.
-     * @return array
-     */
-    public function dashboard_service_cards(array $cards) {
-        array_unshift($cards, [
-            'title' => __('SponsorBoard', 'mds-sponsorboard'),
-            'description' => __('Sell fixed sponsor slots, featured placements, launch partners, and supporter inventory alongside your pixel grids.', 'mds-sponsorboard'),
-            'url' => admin_url('admin.php?page=mds3-sponsorboard'),
-            'label' => __('Manage sponsors', 'mds-sponsorboard'),
-            'primary' => false,
-        ]);
+        $card['description'] = __('Sell fixed sponsor slots, featured placements, launch partners, and supporter inventory alongside your pixel grids.', 'mds-sponsorboard');
+        $card['actions'] = [
+            [
+                'label' => __('Manage sponsors', 'mds-sponsorboard'),
+                'url' => admin_url('admin.php?page=mds3-sponsorboard'),
+                'primary' => true,
+                'icon' => 'dashicons-megaphone',
+            ],
+            [
+                'label' => __('Docs', 'mds-sponsorboard'),
+                'url' => add_query_arg([
+                    'page' => 'mds3-docs',
+                    'package' => $slug,
+                    'doc' => 'usage',
+                ], admin_url('admin.php')),
+                'icon' => 'dashicons-book',
+            ],
+        ];
+        $cards[$slug] = $card;
 
         return $cards;
     }

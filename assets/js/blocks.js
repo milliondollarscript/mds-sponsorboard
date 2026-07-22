@@ -7,21 +7,121 @@
 
     var createElement = wp.element.createElement;
     var Fragment = wp.element.Fragment;
+    var RawHTML = wp.element.RawHTML;
+    var wpShortcode = wp.shortcode || null;
     var InspectorControls = wp.blockEditor.InspectorControls;
     var useBlockProps = wp.blockEditor.useBlockProps;
     var PanelBody = wp.components.PanelBody;
     var SelectControl = wp.components.SelectControl;
+    var TextControl = wp.components.TextControl;
     var ToggleControl = wp.components.ToggleControl;
     var blockEditorDispatch = wp.data && wp.data.dispatch
         ? wp.data.dispatch(wp.blockEditor.store || 'core/block-editor')
         : null;
     var __ = wp.i18n && wp.i18n.__ ? wp.i18n.__ : function (text) { return text; };
-    var config = window.MDSSponsorBoardBlocks || {};
+    var root = window.MillionDollarScript = window.MillionDollarScript || {};
+    root.extensions = root.extensions || {};
+    var extension = root.extensions.sponsorBoard = root.extensions.sponsorBoard || {};
+    var config = extension.blocks || {};
     var boards = config.boards || [];
     var blockApiVersion = Number(config.blockApiVersion || 2);
+    var blockCategory = config.blockCategory || 'million-dollar-script';
 
     function blockProps(props) {
         return useBlockProps ? useBlockProps(props) : props;
+    }
+
+    function shortcodeValue(value) {
+        return String(value === undefined || value === null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function shortcode(attrs) {
+        var pairs = [];
+        Object.keys(attrs || {}).forEach(function (key) {
+            var value = attrs[key];
+            if (value === undefined || value === null || value === '') {
+                return;
+            }
+            pairs.push(key + '="' + shortcodeValue(value) + '"');
+        });
+
+        return '[mds_sponsorboard' + (pairs.length ? ' ' + pairs.join(' ') : '') + ']';
+    }
+
+    function shortcodeMarkup(attrs) {
+        var value = shortcode(attrs);
+
+        return RawHTML ? createElement(RawHTML, null, value) : value;
+    }
+
+    function shortcodeNamed(attrs, key, fallback) {
+        var named = attrs && attrs.named ? attrs.named : {};
+        var value = named[key];
+
+        return value === undefined || value === null || value === '' ? fallback : value;
+    }
+
+    function shortcodeNumber(attrs, key, fallback) {
+        var value = parseInt(shortcodeNamed(attrs, key, fallback), 10);
+
+        return Number.isNaN(value) ? fallback : value;
+    }
+
+    function shortcodeBoolean(attrs, key, fallback) {
+        var value = String(shortcodeNamed(attrs, key, fallback ? 'true' : 'false')).toLowerCase();
+
+        return ['1', 'true', 'yes', 'y', 'on'].indexOf(value) !== -1;
+    }
+
+    function rawShortcode(node) {
+        var text = node && node.textContent ? String(node.textContent).trim() : '';
+        var next = null;
+
+        if (!text || !wpShortcode || typeof wpShortcode.next !== 'function') {
+            return null;
+        }
+
+        next = wpShortcode.next('mds_sponsorboard', text);
+        if (!next || !next.content || String(next.content).trim() !== text) {
+            return null;
+        }
+
+        return (next.shortcode && next.shortcode.attrs) || { named: {} };
+    }
+
+    function rawShortcodeTransform() {
+        return {
+            type: 'raw',
+            selector: 'p',
+            priority: 5,
+            isMatch: function (node) {
+                return !!rawShortcode(node);
+            },
+            transform: function (node) {
+                var attrs = rawShortcode(node);
+                if (!attrs) {
+                    return null;
+                }
+
+                return wp.blocks.createBlock('mds/sponsorboard', {
+                    id: shortcodeNumber(attrs, 'id', 0),
+                    showAvailable: shortcodeBoolean(attrs, 'show_available', true),
+                    preview: shortcodeBoolean(attrs, 'preview', false)
+                });
+            }
+        };
+    }
+
+    function shortcodeAttributes(attributes) {
+        return {
+            id: Number(attributes.id || 0),
+            show_available: attributes.showAvailable ? 'true' : 'false',
+            preview: attributes.preview ? 'true' : 'false'
+        };
     }
 
     function findBoard(id) {
@@ -31,7 +131,7 @@
     }
 
     function boardOptions() {
-        var options = [{ label: __('First sponsor board', 'mds-sponsorboard'), value: '0' }];
+        var options = [{ label: __('First active sponsor board', 'mds-sponsorboard'), value: '0' }];
         boards.forEach(function (board) {
             options.push({
                 label: '#' + board.id + ' ' + board.title,
@@ -39,6 +139,21 @@
             });
         });
         return options;
+    }
+
+    function boardSelectionValue(id) {
+        var idString = String(id || 0);
+        if (idString !== '0' && !findBoard(idString)) {
+            return '__custom';
+        }
+
+        return idString;
+    }
+
+    function boardSelectionOptions() {
+        return boardOptions().concat([
+            { label: __('Custom board ID', 'mds-sponsorboard'), value: '__custom' }
+        ]);
     }
 
     function shouldIgnoreSelectEvent(event) {
@@ -71,7 +186,13 @@
     }
 
     function selectedBoard(attributes) {
-        return findBoard(attributes.id) || boards[0] || null;
+        if (attributes.id) {
+            return findBoard(attributes.id);
+        }
+
+        return boards.find(function (board) {
+            return board.status === 'active';
+        }) || boards[0] || null;
     }
 
     function statusLabel(status) {
@@ -107,10 +228,16 @@
 
     wp.blocks.registerBlockType('mds/sponsorboard', {
         apiVersion: blockApiVersion,
-        title: __('Million Dollar Script SponsorBoard', 'mds-sponsorboard'),
+        title: __('SponsorBoard', 'mds-sponsorboard'),
         description: __('Display a SponsorBoard from Million Dollar Script.', 'mds-sponsorboard'),
         icon: 'megaphone',
-        category: 'widgets',
+        category: blockCategory,
+        keywords: [
+            __('MDS', 'mds-sponsorboard'),
+            __('Million Dollar Script', 'mds-sponsorboard'),
+            __('SponsorBoard', 'mds-sponsorboard'),
+            __('sponsors', 'mds-sponsorboard')
+        ],
         attributes: {
             id: { type: 'number', default: 0 },
             showAvailable: { type: 'boolean', default: true },
@@ -120,7 +247,7 @@
             var attributes = props.attributes;
             var setAttributes = props.setAttributes;
             var board = selectedBoard(attributes);
-            var shortcode = '[mds_sponsorboard id="' + (attributes.id || 0) + '" show_available="' + (attributes.showAvailable ? '1' : '0') + '" preview="' + (attributes.preview ? '1' : '0') + '"]';
+            var boardSelection = boardSelectionValue(attributes.id);
 
             return createElement(Fragment, null,
                 createElement(InspectorControls, null,
@@ -129,12 +256,28 @@
                             label: __('Board', 'mds-sponsorboard'),
                             __next40pxDefaultSize: true,
                             __nextHasNoMarginBottom: true,
-                            value: String(attributes.id || 0),
-                            options: boardOptions(),
+                            help: __('Choose a saved sponsor board by numeric ID. Leave this on First active sponsor board to let the block pick automatically, or use Custom board ID only when you already know the ID.', 'mds-sponsorboard'),
+                            value: boardSelection,
+                            options: boardSelectionOptions(),
                             onChange: function (value) {
+                                if (value === '__custom') {
+                                    setAttributes({ id: attributes.id ? attributes.id : '' });
+                                    return;
+                                }
                                 setAttributes({ id: parseInt(value, 10) || 0 });
                             }
                         }),
+                        boardSelection === '__custom' ? createElement(TextControl, {
+                            label: __('Custom board ID', 'mds-sponsorboard'),
+                            help: __('Enter the numeric database ID for a sponsor board that is not shown in the list.', 'mds-sponsorboard'),
+                            type: 'number',
+                            __next40pxDefaultSize: true,
+                            __nextHasNoMarginBottom: true,
+                            value: attributes.id ? String(attributes.id) : '',
+                            onChange: function (value) {
+                                setAttributes({ id: value === '' ? '' : Number(value) });
+                            }
+                        }) : null,
                         createElement(ToggleControl, {
                             label: __('Show available slots', 'mds-sponsorboard'),
                             __nextHasNoMarginBottom: true,
@@ -157,7 +300,7 @@
                     className: 'mds-sponsorboard-editor-block',
                     tabIndex: 0,
                     role: 'button',
-                    'aria-label': __('Select Million Dollar Script SponsorBoard block', 'mds-sponsorboard'),
+                    'aria-label': __('Select SponsorBoard block', 'mds-sponsorboard'),
                     onMouseDown: selectBlockOnPointer(props.clientId),
                     onClick: selectBlockOnPointer(props.clientId),
                     onKeyDown: selectBlockOnKey(props.clientId)
@@ -166,13 +309,39 @@
                     createElement('div', { className: 'mds-sponsorboard-editor-meta' },
                         createElement('strong', null, board ? board.title : __('SponsorBoard', 'mds-sponsorboard')),
                         createElement('span', null, boardMeta(board, attributes)),
-                        createElement('code', null, shortcode)
+                        createElement('span', null, __('Preview only. The live page renders the selected sponsor board and current slot status.', 'mds-sponsorboard'))
                     )
                 )
             );
         },
-        save: function () {
-            return null;
+        save: function (props) {
+            return shortcodeMarkup(shortcodeAttributes(props.attributes || {}));
+        },
+        deprecated: [
+            {
+                attributes: {
+                    id: { type: 'number', default: 0 },
+                    showAvailable: { type: 'boolean', default: true },
+                    preview: { type: 'boolean', default: false }
+                },
+                save: function () {
+                    return null;
+                }
+            }
+        ],
+        transforms: {
+            from: [
+                {
+                    type: 'shortcode',
+                    tag: 'mds_sponsorboard',
+                    attributes: {
+                        id: { type: 'number', shortcode: function (attrs) { return shortcodeNumber(attrs, 'id', 0); } },
+                        showAvailable: { type: 'boolean', shortcode: function (attrs) { return shortcodeBoolean(attrs, 'show_available', true); } },
+                        preview: { type: 'boolean', shortcode: function (attrs) { return shortcodeBoolean(attrs, 'preview', false); } }
+                    }
+                },
+                rawShortcodeTransform()
+            ]
         }
     });
 }(window.wp));
