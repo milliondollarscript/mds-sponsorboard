@@ -7,7 +7,6 @@
 
 namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MillionDollarScript\Extensions\SponsorBoard\HostedClient;
 use MillionDollarScript\Extensions\SponsorBoard\Notifications;
 use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
@@ -67,7 +66,6 @@ trait HandlesSponsorBookings {
             $this->redirect($referrer, ['sponsorboard_request' => $code]);
         }
 
-        HostedClient::sync_booking($result['booking']);
         $manage_url = $this->manage_url(absint($result['booking']['id']), (string) $result['token']);
         Notifications::booking_created($board, $slot, $result['booking'], $manage_url);
         $this->redirect($manage_url, ['created' => '1']);
@@ -147,7 +145,6 @@ trait HandlesSponsorBookings {
         }
 
         $booking = is_array($result['booking']) ? $result['booking'] : [];
-        HostedClient::sync_booking($booking);
 
         $manage_url = $this->manage_url(absint($booking['id'] ?? 0), (string) $result['token']);
         Notifications::booking_created($board, $slot, $booking, $manage_url);
@@ -206,10 +203,6 @@ trait HandlesSponsorBookings {
             'status' => $this->provider_booking_status((string) ($checkout['status'] ?? 'pending_payment')) ?: 'pending_payment',
             'metadata' => $metadata,
         ]));
-        if ($updated) {
-            HostedClient::sync_booking($updated);
-        }
-
         $this->checkout_redirect((string) $checkout['checkout_url'], $referrer);
     }
 
@@ -262,7 +255,6 @@ trait HandlesSponsorBookings {
             'metadata' => $booking['metadata'] ?? [],
         ]);
         if ($updated) {
-            HostedClient::sync_booking($updated);
             Notifications::booking_updated($updated);
         }
 
@@ -296,7 +288,6 @@ trait HandlesSponsorBookings {
 
         if ($updated) {
             $this->sync_slot_for_booking_status($updated);
-            HostedClient::sync_booking($updated);
         }
     }
 

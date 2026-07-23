@@ -7,7 +7,6 @@
 
 namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
-use MillionDollarScript\Extensions\SponsorBoard\HostedClient;
 use MillionDollarScript\Extensions\SponsorBoard\DataSanitizer;
 use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
@@ -77,7 +76,6 @@ trait HandlesSponsorBoardAnalytics {
         ];
 
         Repository::record_event($event);
-        HostedClient::record_event($event);
 
         wp_send_json_success(['tracked' => true]);
     }

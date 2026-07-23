@@ -203,7 +203,6 @@ final class PublicApi {
         if (!$updated) {
             return new \WP_Error('mds_sponsorboard_booking_update_failed', __('Sponsor details could not be saved.', 'mds-sponsorboard'));
         }
-        HostedClient::sync_booking($updated);
         Notifications::booking_updated($updated);
         return self::find_for_principal($booking_id, $principal);
     }
@@ -234,7 +233,6 @@ final class PublicApi {
             wp_delete_attachment(absint($upload['attachment_id'] ?? 0), true);
             return new \WP_Error('mds_sponsorboard_booking_update_failed', __('Sponsor creative could not be saved.', 'mds-sponsorboard'));
         }
-        HostedClient::sync_booking($updated);
         Notifications::booking_updated($updated);
         return self::find_for_principal($booking_id, $principal);
     }

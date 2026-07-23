@@ -10,7 +10,7 @@ Use an API key scoped to `sponsorboard.read` for:
 - Reading board counts.
 - Reading slot status, price, and dimensions.
 
-Board and slot read payloads exclude private board contact details, hosted-service identifiers, and booking data.
+Board and slot read payloads exclude private board contact details and booking data.
 
 ## Write Actions
 

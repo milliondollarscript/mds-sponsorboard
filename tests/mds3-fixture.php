@@ -22,12 +22,6 @@ $repo::maybe_install();
 $failures = [];
 $created_board_id = 0;
 $secondary_board_id = 0;
-$previous_hosted_options = [
-    'enabled' => get_option('mds_sponsorboard_hosted_enabled', null),
-    'events_enabled' => get_option('mds_sponsorboard_hosted_events_enabled', null),
-    'api_url' => get_option('mds_sponsorboard_hosted_api_url', null),
-    'api_key' => get_option('mds_sponsorboard_hosted_api_key', null),
-];
 $previous_analytics_settings = get_option('mds_sponsorboard_analytics_settings', null);
 $assert = static function ($condition, $message) use (&$failures) {
     if (!$condition) {
@@ -376,107 +370,18 @@ try {
     $assert(0 === absint($idempotent_result['processed'] ?? 0), 'Lifecycle processing should be idempotent after due transitions are complete.');
     $assert('available' === (string) ($repo::find_slot($scheduled_slot_id)['status'] ?? ''), 'Inventory should be released after the final scheduled booking ends.');
 
-    update_option('mds_sponsorboard_hosted_enabled', '0', false);
-    update_option('mds_sponsorboard_hosted_events_enabled', '0', false);
-    $assert(true === \MillionDollarScript\Extensions\SponsorBoard\HostedClient::record_event([
-        'board_id' => $created_board_id,
-        'slot_id' => $slot_id,
-        'booking_id' => $booking_id,
-        'event_type' => 'click',
-        'event_value' => 1,
-    ]), 'Hosted event mirroring should be a no-op when disabled.');
-
-    $unsafe_hosted_settings = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::save_settings([
-        'hosted_enabled' => '1',
-        'hosted_api_url' => 'http://169.254.169.254/latest/meta-data?token=fixture',
+    $assert(!class_exists('\\MillionDollarScript\\Extensions\\SponsorBoard\\HostedClient'), 'The retired hosted-service client should not be available.');
+    $sanitized_board_settings = \MillionDollarScript\Extensions\SponsorBoard\DataSanitizer::board_settings([
+        'columns' => 4,
+        'hosted_service' => ['board_id' => 'retired-remote-board'],
     ]);
-    $assert(is_wp_error($unsafe_hosted_settings), 'Hosted sync must reject unsafe private-network and query-bearing service URLs.');
-    $credential_hosted_settings = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::save_settings([
-        'hosted_enabled' => '1',
-        'hosted_api_url' => 'https://user:password@sponsorboard-fixture.example',
+    $assert(!array_key_exists('hosted_service', $sanitized_board_settings), 'Retired hosted identifiers should not survive board settings validation.');
+
+    $analytics_settings = $repo::save_analytics_settings([
+        'analytics_retention_days' => 45,
+        'analytics_rollup_enabled' => '1',
     ]);
-    $assert(is_wp_error($credential_hosted_settings), 'Hosted sync must reject service URLs containing embedded credentials.');
-
-    $board = $repo::find_board($created_board_id);
-    $settings = is_array($board['settings'] ?? null) ? $board['settings'] : [];
-    $settings['hosted_service'] = ['board_id' => 'remote-board-fixture'];
-    $repo::update_board($created_board_id, array_merge($board, ['settings' => $settings]));
-    $slot = $repo::find_slot($move_slot_id);
-    $metadata = is_array($slot['metadata'] ?? null) ? $slot['metadata'] : [];
-    $metadata['hosted_service'] = ['slot_id' => 'remote-slot-fixture'];
-    $repo::update_slot($move_slot_id, array_merge($slot, ['metadata' => $metadata]));
-    $booking = $repo::find_booking($booking_id);
-    $booking_metadata = is_array($booking['metadata'] ?? null) ? $booking['metadata'] : [];
-    $booking_metadata['hosted_service'] = ['booking_id' => 'remote-booking-fixture'];
-    $repo::update_booking($booking_id, array_merge($booking, ['metadata' => $booking_metadata]));
-
-    update_option('mds_sponsorboard_hosted_enabled', '1', false);
-    update_option('mds_sponsorboard_hosted_events_enabled', '1', false);
-    update_option('mds_sponsorboard_hosted_api_url', 'https://example.com', false);
-    update_option('mds_sponsorboard_hosted_api_key', 'fixture-hosted-api-key', false);
-    $captured_event_payload = null;
-    $capture_hosted_event = static function ($preempt, $args, $url) use (&$captured_event_payload, $assert) {
-        if (false !== strpos((string) $url, '/api/sponsorboard/events')) {
-            $assert(0 === (int) ($args['redirection'] ?? -1), 'Authenticated hosted requests must not follow redirects.');
-            $assert(!empty($args['reject_unsafe_urls']), 'Remote hosted requests must use WordPress unsafe-URL rejection.');
-            $captured_event_payload = json_decode((string) ($args['body'] ?? ''), true);
-            return [
-                'headers' => [],
-                'body' => '{"ok":true}',
-                'response' => [
-                    'code' => 200,
-                    'message' => 'OK',
-                ],
-                'cookies' => [],
-            ];
-        }
-
-        return $preempt;
-    };
-    add_filter('pre_http_request', $capture_hosted_event, 10, 3);
-    $hosted_result = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::record_event([
-        'board_id' => $created_board_id,
-        'slot_id' => $move_slot_id,
-        'booking_id' => $booking_id,
-        'event_type' => 'click',
-        'event_value' => 1,
-        'ip_hash' => 'must-not-send',
-        'user_agent_hash' => 'must-not-send',
-    ]);
-    remove_filter('pre_http_request', $capture_hosted_event, 10);
-    $assert(true === $hosted_result, 'Hosted event mirroring should send configured aggregate events.');
-    $assert(is_array($captured_event_payload), 'Hosted event mirroring should produce an event payload.');
-    $assert(!array_key_exists('ip_hash', $captured_event_payload ?: []) && !array_key_exists('user_agent_hash', $captured_event_payload ?: []), 'Hosted event payload should not include local IP or user-agent hashes.');
-
-    $expired_sync_booking = $repo::find_booking($booking_id) ?: [];
-    $expired_sync_metadata = is_array($expired_sync_booking['metadata'] ?? null) ? $expired_sync_booking['metadata'] : [];
-    $expired_sync_metadata['lifecycle_was_paid'] = true;
-    $expired_sync_booking = $repo::update_booking($booking_id, array_merge($expired_sync_booking, [
-        'status' => 'expired',
-        'metadata' => $expired_sync_metadata,
-    ]));
-    $captured_booking_payload = null;
-    $capture_hosted_booking = static function ($preempt, $args, $url) use (&$captured_booking_payload) {
-        if (false !== strpos((string) $url, '/api/admin/sponsorboard/bookings')) {
-            $captured_booking_payload = json_decode((string) ($args['body'] ?? ''), true);
-            return [
-                'headers' => [],
-                'body' => '{"booking":{"id":"remote-booking-fixture","boardId":"remote-board-fixture","slotId":"remote-slot-fixture"}}',
-                'response' => [
-                    'code' => 200,
-                    'message' => 'OK',
-                ],
-                'cookies' => [],
-            ];
-        }
-
-        return $preempt;
-    };
-    add_filter('pre_http_request', $capture_hosted_booking, 10, 3);
-    $hosted_booking_result = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::sync_booking(is_array($expired_sync_booking) ? $expired_sync_booking : []);
-    remove_filter('pre_http_request', $capture_hosted_booking, 10);
-    $assert(!is_wp_error($hosted_booking_result) && is_array($captured_booking_payload), 'Hosted booking synchronization should send an expired lifecycle payload.');
-    $assert('expired' === (string) ($captured_booking_payload['status'] ?? '') && 'paid' === (string) ($captured_booking_payload['paymentStatus'] ?? ''), 'Hosted sync should preserve the paid state when a paid booking expires.');
+    $assert(45 === absint($analytics_settings['retention_days'] ?? 0) && !empty($analytics_settings['rollup_enabled']), 'Local analytics retention and rollup settings should remain configurable.');
 
     $captured_mail = [];
     $capture_mail = static function ($return, $mail) use (&$captured_mail) {
@@ -630,7 +535,7 @@ try {
     $board_response = $main->rest_get_board($board_response_request);
     $board_response_data = $board_response instanceof WP_REST_Response ? $board_response->get_data() : [];
     $public_settings = is_array($board_response_data['data']['settings'] ?? null) ? $board_response_data['data']['settings'] : [];
-    $assert(!array_key_exists('contact_email', $public_settings) && !array_key_exists('hosted_service', $public_settings), 'Read-level board payloads should omit private contact and hosted-service settings.');
+    $assert(!array_key_exists('contact_email', $public_settings), 'Read-level board payloads should omit private contact settings.');
 
     $manifest = $main->api_endpoint_manifest([]);
     $endpoint_ids = array_map(static function ($endpoint) {
@@ -643,14 +548,6 @@ try {
     }));
     $assert('api_key_write' === (string) ($booking_read_manifest[0]['minimum_security_level'] ?? ''), 'Private booking reads should require write-level API authorization.');
 } finally {
-    foreach ($previous_hosted_options as $name => $value) {
-        $option = 'mds_sponsorboard_hosted_' . $name;
-        if (null === $value) {
-            delete_option($option);
-        } else {
-            update_option($option, $value, false);
-        }
-    }
     if (null === $previous_analytics_settings) {
         delete_option('mds_sponsorboard_analytics_settings');
     } else {

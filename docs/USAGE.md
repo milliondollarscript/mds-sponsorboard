@@ -33,7 +33,7 @@ Each board also controls:
 - The number of booking or checkout attempts allowed per visitor and slot each hour.
 - How many days private sponsor contact and draft creative data is retained.
 
-When a board exists, the admin workspace opens on **Bookings** so sponsor requests are visible first. The workspace also provides **Overview**, **Boards**, **Slots**, and **Hosted service** tabs. Board creation and configuration stay under **Boards**, while inventory stays under **Slots**. Tab URLs preserve the selected board, filters, and pagination so administrators can return to a specific workflow directly.
+When a board exists, the admin workspace opens on **Bookings** so sponsor requests are visible first. The workspace also provides **Overview**, **Boards**, and **Slots** tabs. Board creation and configuration stay under **Boards**, inventory stays under **Slots**, and local analytics storage controls appear on **Overview**. Tab URLs preserve the selected board, filters, and pagination so administrators can return to a specific workflow directly.
 
 ## Block
 
@@ -93,7 +93,7 @@ Use **Starts** and **Ends** on a booking to control its display window. Admin fi
 - An ended booking stops rendering immediately and its slot becomes available when no later booking owns it.
 - Live booking windows for one slot cannot overlap. Adjacent schedules are allowed, so one booking can start at the exact time another ends.
 
-SponsorBoard checks the date window on every public lookup, so delayed cron processing cannot expose future or expired creative. A bounded hourly lifecycle job, with a throttled request-time fallback, records due `Active` and `Expired` statuses, refreshes slot state, sends booking updates, and synchronizes configured hosted records. Repeated runs are safe and do not repeat completed transitions.
+SponsorBoard checks the date window on every public lookup, so delayed cron processing cannot expose future or expired creative. A bounded hourly lifecycle job, with a throttled request-time fallback, records due `Active` and `Expired` statuses, refreshes slot state, and sends booking updates. Repeated runs are safe and do not repeat completed transitions.
 
 Creative status controls public creative rendering:
 
@@ -105,7 +105,7 @@ Remote creative URLs remain visible on the manage page and admin booking cards, 
 
 The public manage link is token-protected, non-cacheable, noindexed, and protected by a no-referrer policy. Treat it like a private edit link and do not publish or log it.
 
-When the premium Advertiser Workspace extension is active, verified sponsors can also find owned SponsorBoard bookings in the shared advertiser workspace. SponsorBoard remains the source of truth for booking status, moderation, schedules, creative data, hosted synchronization, and checkout. The workspace adapter never exposes the signed manage token or private bookings owned by another user or email address.
+When the premium Advertiser Workspace extension is active, verified sponsors can also find owned SponsorBoard bookings in the shared advertiser workspace. SponsorBoard remains the source of truth for booking status, moderation, schedules, creative data, and checkout. The workspace adapter never exposes the signed manage token or private bookings owned by another user or email address.
 
 Authorized sponsors can update their public name, website, note, and uploaded creative from the shared workspace. Updates return the creative to pending review. Checkout uses the booking's saved provider when available and otherwise uses the currently active Million Dollar Script payment provider.
 
@@ -133,8 +133,6 @@ The SponsorBoard admin dashboard shows:
 - Impressions, clicks, and CTR.
 
 The selected board's booking section includes CSV exports for bookings and events. Large exports are generated in batches and then downloaded from an administrator-only endpoint. Booking exports include sponsor contact details and creative status. Event exports include event IDs, board/slot/booking IDs, event type, event value, source, rollup date when applicable, and timestamp without IP or user-agent hashes.
-
-The hosted service settings can mirror aggregate impression and click events when an administrator enables it. Hosted event mirroring sends only the hosted board ID, hosted slot ID, hosted booking ID, event type, count, and timestamp. It does not send raw IP addresses, user-agent strings, local IP hashes, local user-agent hashes, sponsor emails, sponsor names, creative notes, or uploaded files as part of event mirroring.
 
 Raw event retention controls how long detailed local impression and click rows are kept. When rollups are enabled, old raw rows are aggregated by board, slot, booking, event type, and day before cleanup so local reporting remains usable after detailed rows are removed.
 

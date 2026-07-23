@@ -120,7 +120,7 @@ class Main {
     public function extension_onboarding_items(array $items) {
         $items['mds-sponsorboard'] = [
             'name' => __('SponsorBoard', 'mds-sponsorboard'),
-            'summary' => __('Set up boards, slots, creative rules, hosted-service settings, disclosure text, analytics, and sponsor booking moderation.', 'mds-sponsorboard'),
+            'summary' => __('Set up boards, slots, creative rules, disclosure text, analytics, and sponsor booking moderation.', 'mds-sponsorboard'),
             'priority' => 15,
             'actions' => [
                 [

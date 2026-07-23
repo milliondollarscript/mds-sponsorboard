@@ -200,24 +200,22 @@ body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-error {
     grid-column: 1 / -1;
 }
 
-.mds-sponsorboard-hosted {
+.mds-sponsorboard-analytics-settings {
     margin: 16px 0;
 }
 
-.mds-sponsorboard-hosted__form > label:not(.mds-sponsorboard-check) {
+.mds-sponsorboard-analytics-settings__form > label:not(.mds-sponsorboard-check) {
     display: grid;
     gap: 6px;
 }
 
-.mds-sponsorboard-hosted__form > label:not(.mds-sponsorboard-check) span,
+.mds-sponsorboard-analytics-settings__form > label:not(.mds-sponsorboard-check) span,
 .mds-sponsorboard-check span {
     color: var(--mds3-admin-text);
     font-weight: 600;
 }
 
-.mds-sponsorboard-hosted__form input[type="url"],
-.mds-sponsorboard-hosted__form input[type="password"],
-.mds-sponsorboard-hosted__form input[type="number"] {
+.mds-sponsorboard-analytics-settings__form input[type="number"] {
     background: var(--mds3-admin-surface);
     border-color: var(--mds3-admin-border);
     color: var(--mds3-admin-text);
@@ -231,7 +229,7 @@ body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-error {
     gap: 10px;
 }
 
-.mds-sponsorboard-hosted__meta,
+.mds-sponsorboard-analytics-settings__meta,
 .mds-sponsorboard-form-actions {
     align-items: center;
     display: flex;
@@ -240,12 +238,8 @@ body.mds3-admin-theme-dark .mds-sponsorboard-admin .notice-error {
     grid-column: 1 / -1;
 }
 
-.mds-sponsorboard-hosted__meta {
+.mds-sponsorboard-analytics-settings__meta {
     color: var(--mds3-admin-muted);
-}
-
-.mds-sponsorboard-hosted__error {
-    color: #b42318;
 }
 
 .mds-sponsorboard-form-actions .submit {

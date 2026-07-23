@@ -1,6 +1,6 @@
 <?php
 /**
- * SponsorBoard admin POST handlers and save-time synchronization.
+ * SponsorBoard admin POST handlers.
  *
  * @package MillionDollarScript\Extensions\SponsorBoard
  */
@@ -9,7 +9,6 @@ namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
 use MillionDollarScript\Extensions\SponsorBoard\BookingLifecycle;
 use MillionDollarScript\Extensions\SponsorBoard\ExportJobManager;
-use MillionDollarScript\Extensions\SponsorBoard\HostedClient;
 use MillionDollarScript\Extensions\SponsorBoard\Notifications;
 use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
@@ -53,13 +52,6 @@ trait HandlesSponsorBoardAdminRequests {
             $board = $id ? Repository::find_board($id) : null;
         }
 
-        if ($board) {
-            $sync = HostedClient::sync_board($board);
-            if (is_wp_error($sync)) {
-                $this->hosted_notice('error', $sync->get_error_message());
-            }
-        }
-
         $args = ['page' => 'mds3-sponsorboard', 'tab' => 'boards', 'saved' => $board ? 'board' : '0'];
         if ($board) {
             $args['board_id'] = absint($board['id'] ?? $id);
@@ -95,13 +87,6 @@ trait HandlesSponsorBoardAdminRequests {
         if (!$slot_id) {
             $slot_id = Repository::create_slot($data);
             $slot = $slot_id ? Repository::find_slot($slot_id) : null;
-        }
-
-        if ($slot) {
-            $sync = HostedClient::sync_slot($slot);
-            if (is_wp_error($sync)) {
-                $this->hosted_notice('error', $sync->get_error_message());
-            }
         }
 
         wp_safe_redirect(add_query_arg([
@@ -146,7 +131,7 @@ trait HandlesSponsorBoardAdminRequests {
         $ends_at = BookingLifecycle::from_site_input(wp_unslash($_POST['ends_at'] ?? BookingLifecycle::to_site_input($booking['ends_at'] ?? '')));
         $schedule_error = is_wp_error($starts_at) ? $starts_at : (is_wp_error($ends_at) ? $ends_at : Repository::validate_booking_schedule($target_slot_id, $starts_at, $ends_at, $status, $booking_id));
         if (is_wp_error($schedule_error)) {
-            $this->hosted_notice('error', $schedule_error->get_error_message());
+            $this->admin_notice('error', $schedule_error->get_error_message());
             wp_safe_redirect(add_query_arg([
                 'page' => 'mds3-sponsorboard',
                 'board_id' => absint($booking['board_id'] ?? 0),
@@ -159,7 +144,7 @@ trait HandlesSponsorBoardAdminRequests {
         if ($target_slot_id !== absint($booking['slot_id'] ?? 0)) {
             $moved = Repository::move_booking($booking_id, $target_slot_id);
             if (is_wp_error($moved)) {
-                $this->hosted_notice('error', $moved->get_error_message());
+                $this->admin_notice('error', $moved->get_error_message());
                 wp_safe_redirect(add_query_arg([
                     'page' => 'mds3-sponsorboard',
                     'board_id' => absint($booking['board_id'] ?? 0),
@@ -180,12 +165,8 @@ trait HandlesSponsorBoardAdminRequests {
         if ($updated) {
             $this->sync_slot_for_booking_status($updated);
             Notifications::booking_updated($updated);
-            $sync = HostedClient::sync_booking($updated);
-            if (is_wp_error($sync)) {
-                $this->hosted_notice('error', $sync->get_error_message());
-            }
         } else {
-            $this->hosted_notice('error', __('The booking could not be saved because its schedule or inventory changed. Review it and try again.', 'mds-sponsorboard'));
+            $this->admin_notice('error', __('The booking could not be saved because its schedule or inventory changed. Review it and try again.', 'mds-sponsorboard'));
         }
 
         wp_safe_redirect(add_query_arg([
@@ -198,43 +179,24 @@ trait HandlesSponsorBoardAdminRequests {
     }
 
     /**
-     * Save optional hosted-service settings.
+     * Save local analytics retention settings.
      *
      * @return void
      */
-    public function save_hosted_settings() {
-        $this->require_admin('mds_sponsorboard_save_hosted_settings');
-
-        $saved = HostedClient::save_settings($_POST);
-        if (is_wp_error($saved)) {
-            $this->hosted_notice('error', $saved->get_error_message());
-            wp_safe_redirect(add_query_arg(['page' => 'mds3-sponsorboard', 'tab' => 'hosted', 'saved' => '0'], admin_url('admin.php')));
-            exit;
-        }
-
+    public function save_analytics_settings() {
+        $this->require_admin('mds_sponsorboard_save_analytics_settings');
         Repository::save_analytics_settings($_POST);
         if (!empty($_POST['analytics_cleanup_now'])) {
             $cleanup = Repository::cleanup_old_events();
-            $this->hosted_notice('success', sprintf(
+            $this->admin_notice('success', sprintf(
                 /* translators: 1: rolled-up groups, 2: deleted raw rows. */
                 __('Analytics cleanup finished. Rolled up %1$s groups and deleted %2$s raw events.', 'mds-sponsorboard'),
                 number_format_i18n(absint($cleanup['rolled_up'] ?? 0)),
                 number_format_i18n(absint($cleanup['deleted'] ?? 0))
             ));
         }
-        Repository::cleanup_private_booking_data();
 
-        if (!empty($_POST['hosted_test_connection'])) {
-            $test = HostedClient::test_connection();
-            if (is_wp_error($test)) {
-                $this->hosted_notice('error', $test->get_error_message());
-                wp_safe_redirect(add_query_arg(['page' => 'mds3-sponsorboard', 'tab' => 'hosted', 'saved' => '0'], admin_url('admin.php')));
-                exit;
-            }
-            $this->hosted_notice('success', __('Hosted SponsorBoard connection verified.', 'mds-sponsorboard'));
-        }
-
-        wp_safe_redirect(add_query_arg(['page' => 'mds3-sponsorboard', 'tab' => 'hosted', 'saved' => 'hosted'], admin_url('admin.php')));
+        wp_safe_redirect(add_query_arg(['page' => 'mds3-sponsorboard', 'tab' => 'overview', 'saved' => 'analytics'], admin_url('admin.php')));
         exit;
     }
 
@@ -259,8 +221,8 @@ trait HandlesSponsorBoardAdminRequests {
         check_admin_referer($nonce_action);
     }
 
-    private function hosted_notice($type, $message) {
-        set_transient('mds_sponsorboard_hosted_notice_' . get_current_user_id(), [
+    private function admin_notice($type, $message) {
+        set_transient('mds_sponsorboard_admin_notice_' . get_current_user_id(), [
             'type' => sanitize_key((string) $type),
             'message' => sanitize_text_field((string) $message),
         ], MINUTE_IN_SECONDS);
@@ -293,7 +255,7 @@ trait HandlesSponsorBoardAdminRequests {
         ];
 
         if (is_wp_error($job)) {
-            $this->hosted_notice('error', $job->get_error_message());
+            $this->admin_notice('error', $job->get_error_message());
             $args['saved'] = '0';
         } else {
             $args['sponsorboard_export'] = sanitize_text_field((string) ($job['id'] ?? ''));

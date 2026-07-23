@@ -20,7 +20,6 @@ $tabs['boards'] = __('Boards', 'mds-sponsorboard');
 if (!empty($selected)) {
     $tabs['slots'] = sprintf(__('Slots (%d)', 'mds-sponsorboard'), count($slots ?? []));
 }
-$tabs['hosted'] = __('Hosted service', 'mds-sponsorboard');
 ?>
 <div class="wrap mds3-admin mds-sponsorboard-admin">
     <div class="mds-extension-heading-row">
@@ -62,8 +61,7 @@ $tabs['hosted'] = __('Hosted service', 'mds-sponsorboard');
             $this->metric(__('Expiring', 'mds-sponsorboard'), number_format_i18n(absint($totals['expiring'] ?? 0)), __('Active bookings ending in 30 days', 'mds-sponsorboard'));
             ?>
         </section>
-    <?php elseif ('hosted' === $active_tab) : ?>
-        <?php $this->hosted_service_panel($hosted ?? [], $analytics ?? []); ?>
+        <?php $this->analytics_settings_panel($analytics ?? []); ?>
     <?php else : ?>
         <div class="mds-sponsorboard-layout<?php echo 'bookings' === $active_tab ? ' mds-sponsorboard-layout--bookings' : ''; ?>">
             <section class="mds3-card">

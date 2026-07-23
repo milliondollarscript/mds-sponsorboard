@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  */
 class Repository {
 
-    public const DB_VERSION = '1.2.0';
+    public const DB_VERSION = '1.3.0';
     public const DB_VERSION_OPTION = 'mds_sponsorboard_db_version';
     private const ANALYTICS_SETTINGS_OPTION = 'mds_sponsorboard_analytics_settings';
 
@@ -149,6 +149,7 @@ CREATE TABLE {$audit} (
 ) {$charset};
 ");
 
+        self::remove_retired_hosted_state();
         update_option(self::DB_VERSION_OPTION, self::DB_VERSION, false);
     }
 
@@ -1853,6 +1854,78 @@ CREATE TABLE {$audit} (
         $row['settings'] = self::decode_json($row['settings'] ?? '');
 
         return $row;
+    }
+
+    /**
+     * Remove credentials and remote identifiers left by the retired hosted pilot.
+     *
+     * @return void
+     */
+    private static function remove_retired_hosted_state() {
+        global $wpdb;
+
+        foreach ([
+            'mds_sponsorboard_hosted_enabled',
+            'mds_sponsorboard_hosted_events_enabled',
+            'mds_sponsorboard_hosted_api_url',
+            'mds_sponsorboard_hosted_api_key',
+            'mds_sponsorboard_hosted_site_id',
+            'mds_sponsorboard_hosted_last_sync',
+            'mds_sponsorboard_hosted_last_error',
+        ] as $option) {
+            delete_option($option);
+        }
+
+        foreach (['_transient_', '_transient_timeout_'] as $prefix) {
+            $pattern = $wpdb->esc_like($prefix . 'mds_sponsorboard_hosted_notice_') . '%';
+            $wpdb->query($wpdb->prepare(
+                'DELETE FROM ' . self::ident($wpdb->options) . ' WHERE option_name LIKE %s',
+                $pattern
+            ));
+        }
+
+        self::remove_retired_hosted_metadata(self::table('boards'), 'settings');
+        self::remove_retired_hosted_metadata(self::table('slots'), 'metadata');
+        self::remove_retired_hosted_metadata(self::table('bookings'), 'metadata');
+    }
+
+    /**
+     * Remove retired hosted identifiers from one JSON-backed metadata column.
+     *
+     * @param string $table  Table name.
+     * @param string $column Metadata column.
+     * @return void
+     */
+    private static function remove_retired_hosted_metadata($table, $column) {
+        global $wpdb;
+
+        $last_id = 0;
+        $pattern = '%' . $wpdb->esc_like('"hosted_service"') . '%';
+        do {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                'SELECT id, ' . self::ident($column) . ' AS payload FROM ' . self::ident($table) . ' WHERE id > %d AND ' . self::ident($column) . ' LIKE %s ORDER BY id ASC LIMIT 250',
+                $last_id,
+                $pattern
+            ), ARRAY_A);
+            $rows = is_array($rows) ? $rows : [];
+
+            foreach ($rows as $row) {
+                $last_id = absint($row['id'] ?? 0);
+                $payload = self::decode_json($row['payload'] ?? '');
+                if (!array_key_exists('hosted_service', $payload)) {
+                    continue;
+                }
+
+                unset($payload['hosted_service']);
+                $wpdb->update(
+                    $table,
+                    [$column => self::json($payload)],
+                    ['id' => $last_id],
+                    ['%s'],
+                    ['%d']
+                );
+            }
+        } while (250 === count($rows));
     }
 
     private static function normalize_slot(array $row) {

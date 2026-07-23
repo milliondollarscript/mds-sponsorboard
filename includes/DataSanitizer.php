@@ -60,10 +60,6 @@ class DataSanitizer {
             'booking_limit_per_hour' => min(100, max(1, absint($merged['booking_limit_per_hour'] ?? 10))),
         ];
 
-        if (!empty($merged['hosted_service']) && is_array($merged['hosted_service'])) {
-            $clean['hosted_service'] = self::metadata($merged['hosted_service'], 2);
-        }
-
         return $clean;
     }
 

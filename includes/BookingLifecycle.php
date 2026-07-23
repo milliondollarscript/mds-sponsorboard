@@ -106,7 +106,6 @@ final class BookingLifecycle {
                     'status' => $next_status,
                 ]);
                 Notifications::booking_updated($updated);
-                HostedClient::sync_booking($updated);
                 $result['processed']++;
                 $result['active' === $next_status ? 'activated' : 'expired']++;
             }

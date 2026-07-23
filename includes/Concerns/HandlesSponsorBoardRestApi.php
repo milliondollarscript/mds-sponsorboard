@@ -8,7 +8,6 @@
 namespace MillionDollarScript\Extensions\SponsorBoard\Concerns;
 
 use MillionDollarScript\Extensions\SponsorBoard\BookingLifecycle;
-use MillionDollarScript\Extensions\SponsorBoard\HostedClient;
 use MillionDollarScript\Extensions\SponsorBoard\DataSanitizer;
 use MillionDollarScript\Extensions\SponsorBoard\Repository;
 
@@ -201,9 +200,6 @@ trait HandlesSponsorBoardRestApi {
         }
 
         $board = Repository::find_board($id);
-        if ($board) {
-            HostedClient::sync_board($board);
-        }
 
         return new \WP_REST_Response(['data' => $this->board_payload($board, true)], 201);
     }
@@ -232,8 +228,6 @@ trait HandlesSponsorBoardRestApi {
         if (!$board) {
             return new \WP_Error('mds_sponsorboard_update_failed', __('Sponsor board could not be updated.', 'mds-sponsorboard'), ['status' => 400]);
         }
-
-        HostedClient::sync_board($board);
 
         return rest_ensure_response(['data' => $this->board_payload($board, true)]);
     }
@@ -280,9 +274,6 @@ trait HandlesSponsorBoardRestApi {
         }
 
         $slot = Repository::find_slot($slot_id);
-        if ($slot) {
-            HostedClient::sync_slot($slot);
-        }
 
         return new \WP_REST_Response(['data' => $this->slot_payload($slot)], 201);
     }
@@ -311,8 +302,6 @@ trait HandlesSponsorBoardRestApi {
         if (!$slot) {
             return new \WP_Error('mds_sponsorboard_slot_update_failed', __('Sponsor slot could not be updated.', 'mds-sponsorboard'), ['status' => 400]);
         }
-
-        HostedClient::sync_slot($slot);
 
         return rest_ensure_response(['data' => $this->slot_payload($slot)]);
     }
@@ -396,7 +385,6 @@ trait HandlesSponsorBoardRestApi {
         }
 
         $booking = is_array($result['booking']) ? $result['booking'] : [];
-        HostedClient::sync_booking($booking);
 
         return new \WP_REST_Response(['data' => $this->booking_payload($booking, (string) $result['token'])], 201);
     }
@@ -438,7 +426,6 @@ trait HandlesSponsorBoardRestApi {
         }
 
         $this->sync_slot_for_booking_status($updated);
-        HostedClient::sync_booking($updated);
 
         return rest_ensure_response(['data' => $this->booking_payload($updated)]);
     }

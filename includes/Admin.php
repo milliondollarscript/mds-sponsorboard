@@ -72,7 +72,7 @@ class Admin {
         add_action('admin_post_mds_sponsorboard_save_board', [$this, 'save_board']);
         add_action('admin_post_mds_sponsorboard_save_slot', [$this, 'save_slot']);
         add_action('admin_post_mds_sponsorboard_save_booking', [$this, 'save_booking']);
-        add_action('admin_post_mds_sponsorboard_save_hosted_settings', [$this, 'save_hosted_settings']);
+        add_action('admin_post_mds_sponsorboard_save_analytics_settings', [$this, 'save_analytics_settings']);
         add_action('admin_post_mds_sponsorboard_export_bookings', [$this, 'export_bookings']);
         add_action('admin_post_mds_sponsorboard_export_events', [$this, 'export_events']);
         add_action('admin_post_mds_sponsorboard_download_export', [$this, 'download_export']);

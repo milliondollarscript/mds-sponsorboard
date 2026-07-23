@@ -45,12 +45,11 @@ trait RendersSponsorBoardAdminPage {
             ? Repository::bookings_page($selected_id, max(1, absint($_GET['booking_page'] ?? 1)), 20, $booking_filters)
             : ['items' => [], 'page' => 1, 'per_page' => 20, 'total' => 0, 'pages' => 1];
         $selected_report = $selected_id ? Repository::reporting_summary($selected_id) : [];
-        $hosted = \MillionDollarScript\Extensions\SponsorBoard\HostedClient::settings();
         $analytics = Repository::analytics_settings();
         $export_status = ExportJobManager::current_status();
         $default_tab = $selected_id ? 'bookings' : 'overview';
         $active_tab = sanitize_key(wp_unslash($_GET['tab'] ?? $default_tab));
-        $allowed_tabs = ['overview', 'boards', 'hosted'];
+        $allowed_tabs = ['overview', 'boards'];
         if ($selected_id) {
             $allowed_tabs = array_merge($allowed_tabs, ['slots', 'bookings']);
         }
@@ -58,7 +57,7 @@ trait RendersSponsorBoardAdminPage {
             $active_tab = $default_tab;
         }
 
-        $this->admin_template('page.php', compact('active_tab', 'analytics', 'board_page', 'boards', 'booking_filters', 'booking_page', 'export_status', 'hosted', 'selected', 'selected_id', 'selected_report', 'slots', 'totals'));
+        $this->admin_template('page.php', compact('active_tab', 'analytics', 'board_page', 'boards', 'booking_filters', 'booking_page', 'export_status', 'selected', 'selected_id', 'selected_report', 'slots', 'totals'));
     }
 
     private function notices() {
@@ -67,12 +66,12 @@ trait RendersSponsorBoardAdminPage {
         if (get_transient('mds_sponsorboard_activated')) {
             delete_transient('mds_sponsorboard_activated');
         }
-        $hosted_notice = get_transient('mds_sponsorboard_hosted_notice_' . get_current_user_id());
-        if ($hosted_notice) {
-            delete_transient('mds_sponsorboard_hosted_notice_' . get_current_user_id());
+        $admin_notice = get_transient('mds_sponsorboard_admin_notice_' . get_current_user_id());
+        if ($admin_notice) {
+            delete_transient('mds_sponsorboard_admin_notice_' . get_current_user_id());
         }
 
-        $this->admin_template('partials/notices.php', compact('activated', 'hosted_notice', 'saved'));
+        $this->admin_template('partials/notices.php', compact('activated', 'admin_notice', 'saved'));
     }
 
     private function metric($label, $value, $description) {
@@ -104,8 +103,8 @@ trait RendersSponsorBoardAdminPage {
         $this->admin_template('partials/board-form.php', compact('board', 'settings'));
     }
 
-    private function hosted_service_panel(array $hosted, array $analytics) {
-        $this->admin_template('partials/hosted-service.php', compact('analytics', 'hosted'));
+    private function analytics_settings_panel(array $analytics) {
+        $this->admin_template('partials/analytics-settings.php', compact('analytics'));
     }
 
     private function export_status_panel($export_status) {
