@@ -4,7 +4,7 @@ Tags: million dollar script, sponsorship, monetization, api
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.1
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -39,6 +39,13 @@ Boards can also enable paid checkout through the active Million Dollar Script pa
 Create API keys in Million Dollar Script -> API Access with `sponsorboard.read` for board and slot inventory or `sponsorboard.write` for private bookings and all changes. The API supports boards, slots, and sponsor booking requests under `/wp-json/million-dollar-script/v1/sponsorboard`. The admin dashboard includes local revenue, occupancy, impression, click, CTR, booking export, event export, private-data retention, and WordPress privacy-tool support.
 
 == Changelog ==
+
+= 1.4.0 =
+* Adds optional subscription allowances for sponsor bookings and subscription-managed booking terms.
+* Preserves one-time payment-provider checkout when no eligible subscription allowance is available.
+
+= 1.3.1 =
+* Removed the dormant hosted SponsorBoard pilot while preserving local boards, bookings, analytics, and privacy workflows.
 
 = 1.3.0 =
 * Adds secure optional Advertiser Workspace integration for owned booking management, creative replacement, and checkout.

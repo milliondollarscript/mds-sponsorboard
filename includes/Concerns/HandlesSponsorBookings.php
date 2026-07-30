@@ -148,6 +148,22 @@ trait HandlesSponsorBookings {
 
         $manage_url = $this->manage_url(absint($booking['id'] ?? 0), (string) $result['token']);
         Notifications::booking_created($board, $slot, $booking, $manage_url);
+        if (
+            class_exists('\MillionDollarScript\Extensions\Subscriptions\Entitlements')
+            && \MillionDollarScript\Extensions\Subscriptions\Entitlements::consume(
+                'sponsorboard',
+                'bookings',
+                'booking:' . absint($booking['id'] ?? 0),
+                ['user_id' => get_current_user_id(), 'email' => $email],
+                (string) absint($slot['id'] ?? 0)
+            )
+        ) {
+            \MillionDollarScript\Commerce\Payments::mark_source_paid('sponsorboard', absint($booking['id'] ?? 0), [
+                'provider' => 'subscription_allowance',
+            ]);
+            $this->checkout_redirect($manage_url, $referrer);
+        }
+
         $checkout = \MillionDollarScript\Commerce\Payments::create_checkout([
             'source' => 'sponsorboard',
             'source_id' => absint($booking['id'] ?? 0),
@@ -315,6 +331,38 @@ trait HandlesSponsorBookings {
     }
 
     /**
+     * Extend a subscription-managed booking without creating a replacement.
+     */
+    public function handle_subscription_term($source, $source_id, $context = [], $result = null) {
+        unset($result);
+        if ('sponsorboard' !== sanitize_key((string) $source)) {
+            return;
+        }
+
+        $booking = Repository::find_booking(absint($source_id));
+        $subscription = is_array($context['subscription'] ?? null) ? $context['subscription'] : [];
+        $period_end = sanitize_text_field((string) ($subscription['current_period_end'] ?? ''));
+        if (!$booking || !$this->subscription_utc_datetime($period_end)) {
+            return;
+        }
+        $current_end = sanitize_text_field((string) ($booking['ends_at'] ?? ''));
+        if ($current_end && $current_end >= $period_end) {
+            return;
+        }
+
+        $metadata = is_array($booking['metadata'] ?? null) ? $booking['metadata'] : [];
+        $metadata['subscription_public_id'] = sanitize_text_field((string) ($subscription['public_id'] ?? ''));
+        $metadata['subscription_managed'] = true;
+        $updated = Repository::update_booking(absint($source_id), array_merge($booking, [
+            'ends_at' => $period_end,
+            'metadata' => $metadata,
+        ]));
+        if ($updated) {
+            $this->sync_slot_for_booking_status($updated);
+        }
+    }
+
+    /**
      * Provide signed manage URLs to payment provider extensions.
      *
      * @param string $url        Existing URL.
@@ -354,6 +402,13 @@ trait HandlesSponsorBookings {
         }
 
         return '';
+    }
+
+    private function subscription_utc_datetime($value) {
+        $value = (string) $value;
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $value, new \DateTimeZone('UTC'));
+
+        return $date instanceof \DateTimeImmutable && $date->format('Y-m-d H:i:s') === $value;
     }
 
     /**

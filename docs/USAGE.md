@@ -121,6 +121,10 @@ To enable paid checkout:
 
 Available slots then show **Buy this slot**. The sponsor enters the same sponsor details and consent, SponsorBoard atomically creates a pending booking, and the active provider starts payment. Completed, processing, and paid callbacks move the booking to `Paid`. Failed, cancelled, expired, denied, and refunded callbacks close the booking and release inventory only when no other live booking owns the slot. Unknown payment states are ignored.
 
+When the optional Subscriptions extension is enabled, an eligible sponsor can use a configured booking allowance for the selected slot. SponsorBoard consumes the allowance with the booking ID as its idempotency key, marks the booking paid, and opens the normal signed manage page without starting a second checkout. If no eligible allowance exists, the configured one-time payment-provider flow remains unchanged.
+
+A subscription configured to manage the booking term can extend `Ends` after a paid cycle. SponsorBoard only moves the end date forward and keeps the subscription reference in booking metadata; retries cannot shorten the term or create a replacement booking.
+
 ## Analytics, Exports, and Privacy
 
 Public boards track approved sponsor impressions and clicks with a throttled local AJAX endpoint. SponsorBoard stores hashed IP and user-agent fingerprints only for rate limiting and abuse control; raw IP addresses are not stored.

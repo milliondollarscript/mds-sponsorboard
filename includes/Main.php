@@ -98,6 +98,8 @@ class Main {
         add_action('million-dollar-script/extensions/sponsorboard/payment/status', [$this, 'handle_provider_payment_status'], 10, 3);
         add_action('mds_sponsorboard_payment_status', [$this, 'handle_provider_payment_status'], 10, 3);
         add_action('million-dollar-script/payment/source/status', [$this, 'handle_core_payment_source_status'], 10, 4);
+        add_action('million-dollar-script/commerce/source/activate', [$this, 'handle_subscription_term'], 10, 4);
+        add_action('million-dollar-script/commerce/source/renew', [$this, 'handle_subscription_term'], 10, 4);
         add_action('mds_sponsorboard_cleanup_events', [$this, 'cleanup_analytics_events']);
         add_filter('wp_privacy_personal_data_exporters', [$this, 'privacy_exporters']);
         add_filter('wp_privacy_personal_data_erasers', [$this, 'privacy_erasers']);

@@ -14,6 +14,7 @@ SponsorBoard is a local-first Million Dollar Script extension for selling fixed 
 - Public sponsor request forms for active, available slots.
 - Required sponsor consent with configurable sponsorship terms and privacy links.
 - Optional paid checkout through the active Million Dollar Script payment provider.
+- Optional sponsor-booking allowances and term management through the Subscriptions extension.
 - Signed sponsor manage links for updating submitted details.
 - Sponsor and board-contact email notifications through `wp_mail()`.
 - Searchable, paginated admin booking moderation and safe moves between available slots.
@@ -104,6 +105,8 @@ SponsorBoard does not connect directly to WooCommerce, EDD, Stripe, or any other
 
 When paid checkout is enabled, available slots show a **Buy this slot** form. SponsorBoard creates a pending booking, asks the core payments API to start checkout, and listens for core payment status callbacks. Completed, processing, and paid callbacks preserve paid inventory; failed, cancelled, expired, denied, and refunded callbacks close the booking and release the slot only when no other live booking owns it. Unknown provider states are ignored. The selected provider extension handles the store or gateway-specific order.
 
+If the optional Subscriptions extension grants the sponsor an eligible booking allowance for the selected slot, SponsorBoard consumes that allowance idempotently and marks the booking paid without opening a second checkout. Subscription-managed booking terms extend only when the new paid period ends later than the stored booking term. Customers without an eligible allowance continue through the configured one-time payment provider.
+
 ## Reporting and Privacy
 
 SponsorBoard tracks approved sponsor impressions and clicks through a throttled local AJAX endpoint. It stores event totals with hashed IP and user-agent fingerprints for rate limiting; raw IP addresses are not stored. The admin dashboard shows revenue, occupancy, active and expiring bookings, impressions, clicks, and CTR. Booking and event CSV exports are available from the selected board.
@@ -111,6 +114,14 @@ SponsorBoard tracks approved sponsor impressions and clicks through a throttled 
 Sponsor booking data is included in paginated WordPress personal data export and erasure tools. Each board controls how long private sponsor data is retained. Scheduled cleanup removes email addresses, manage tokens, and private metadata while preserving current or future approved sponsorship content until its scheduled end or another unpublishing action. An explicit personal-data erasure request also removes public sponsor identity, URL, and creative content. Both paths preserve non-personal aggregate reporting rows.
 
 ## Changelog
+
+### 1.4.0
+
+- Added optional subscription booking allowances and subscription-managed booking terms without changing the one-time checkout fallback.
+
+### 1.3.1
+
+- Removed the dormant hosted SponsorBoard pilot while preserving local sponsor operations.
 
 ### 1.2.0
 

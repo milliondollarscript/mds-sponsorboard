@@ -3,7 +3,7 @@
  * Plugin Name: Million Dollar Script - SponsorBoard
  * Plugin URI: https://milliondollarscript.com/extensions/sponsorboard
  * Description: Sell and manage sponsor boards, slots, bookings, and creatives from Million Dollar Script.
- * Version: 1.3.1
+ * Version: 1.4.0
  * Author: Million Dollar Script
  * Author URI: https://milliondollarscript.com
  * Text Domain: mds-sponsorboard
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MDS_SPONSORBOARD_VERSION')) {
-    define('MDS_SPONSORBOARD_VERSION', '1.3.1');
+    define('MDS_SPONSORBOARD_VERSION', '1.4.0');
 }
 
 if (!defined('MDS_SPONSORBOARD_FILE')) {

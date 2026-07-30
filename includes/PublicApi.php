@@ -255,6 +255,26 @@ final class PublicApi {
             $provider = \MillionDollarScript\Commerce\Payments::active_provider_id();
         }
         $manage_url = (string) apply_filters('million-dollar-script/extensions/sponsorboard/customer/workspace/url', '', $booking);
+        if (
+            class_exists('\MillionDollarScript\Extensions\Subscriptions\Entitlements')
+            && \MillionDollarScript\Extensions\Subscriptions\Entitlements::consume(
+                'sponsorboard',
+                'bookings',
+                'booking:' . absint($booking_id),
+                $principal,
+                (string) absint($slot['id'] ?? 0)
+            )
+        ) {
+            \MillionDollarScript\Commerce\Payments::mark_source_paid('sponsorboard', absint($booking_id), [
+                'provider' => 'subscription_allowance',
+            ]);
+            return [
+                'provider' => 'subscription_allowance',
+                'status' => 'paid',
+                'checkout_url' => esc_url_raw($manage_url),
+            ];
+        }
+
         $checkout = \MillionDollarScript\Commerce\Payments::create_checkout([
             'source' => 'sponsorboard',
             'source_id' => absint($booking_id),

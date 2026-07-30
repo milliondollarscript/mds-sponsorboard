@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.0
+
+- Added optional Subscriptions allowances that can satisfy an eligible sponsor booking without starting a second checkout.
+- Extended subscription-managed booking terms idempotently while preserving one-time payment-provider checkout for customers without an eligible allowance.
+
+## 1.3.1
+
+- Removed the dormant hosted SponsorBoard pilot and its remote synchronization controls.
+- Preserved local boards, sponsor requests, bookings, creative moderation, analytics, exports, payments, and privacy workflows.
+
 ## 1.3.0
 
 - Added a customer-safe public contract for owner-scoped SponsorBoard booking lists, details, creative updates, image replacement, history, and checkout.
