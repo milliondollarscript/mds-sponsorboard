@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added opt-in uninstall cleanup through the core extension policy for extension-owned boards, bookings, analytics, audit records, settings, schedules, and generated exports.
+
 ## 1.4.0
 
 - Added optional Subscriptions allowances that can satisfy an eligible sponsor booking without starting a second checkout.

@@ -128,6 +128,9 @@ function mds_sponsorboard_register_extension() {
             'main_file' => __FILE__,
             'premium' => false,
             'license_required' => false,
+            'cleanup' => [
+                'description' => 'Sponsor boards, slots, bookings, analytics, events, exports, and audit records.',
+            ],
             'capabilities' => [
                 'admin_pages' => true,
                 'sponsor_inventory' => true,
