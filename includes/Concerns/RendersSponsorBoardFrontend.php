@@ -236,10 +236,7 @@ trait RendersSponsorBoardFrontend {
     }
 
     private function theme_mode() {
-        $settings = get_option('mds3_settings', []);
-        $mode = is_array($settings) ? sanitize_key((string) ($settings['theme_mode'] ?? 'light')) : 'light';
-
-        return in_array($mode, ['light', 'dark', 'system'], true) ? $mode : 'light';
+        return \MillionDollarScript\V3\Support\ThemeMode::mode();
     }
 
     private function effective_currency($currency = '') {
