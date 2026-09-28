@@ -236,7 +236,7 @@ trait RendersSponsorBoardFrontend {
     }
 
     private function theme_mode() {
-        return \MillionDollarScript\V3\Support\ThemeMode::mode();
+        return \MillionDollarScript\Core\ThemeMode::mode();
     }
 
     private function effective_currency($currency = '') {
