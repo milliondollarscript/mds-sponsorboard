@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MDS_SPONSORBOARD_VERSION')) {
-    define('MDS_SPONSORBOARD_VERSION', '1.4.0');
+    define('MDS_SPONSORBOARD_VERSION', '1.4.1');
 }
 
 if (!defined('MDS_SPONSORBOARD_FILE')) {

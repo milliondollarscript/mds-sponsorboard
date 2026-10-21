@@ -2,7 +2,7 @@
   "schema": 1,
   "package": "mds-sponsorboard",
   "type": "extension",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "channel": "main",
   "title": "SponsorBoard",
   "docs": [
